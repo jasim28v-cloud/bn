@@ -2,260 +2,207 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIKDOWN PRO | CINEMATIC EDITION</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AETHER_SENTINEL | QUANTUM V1.1 PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary: #fe2c55;
-            --secondary: #25f4ee;
-            --bg-dark: #020205;
-            --glass: rgba(255, 255, 255, 0.02);
-            --border: rgba(255, 255, 255, 0.1);
-        }
-
-        /* خلفية سينمائية مع أنيميشن */
-        body {
-            background-color: var(--bg-dark);
-            background-image: 
-                radial-gradient(circle at 5% 5%, rgba(254, 44, 85, 0.15) 0%, transparent 30%),
-                radial-gradient(circle at 95% 95%, rgba(37, 244, 238, 0.15) 0%, transparent 30%);
-            color: #fff;
-            font-family: 'Cairo', sans-serif;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-            overflow-x: hidden;
-        }
-
-        /* كارت الزجاج العائم */
-        .ultra-card {
-            background: var(--glass);
-            backdrop-filter: blur(50px) saturate(200%);
-            -webkit-backdrop-filter: blur(50px) saturate(200%);
-            border: 1px solid var(--border);
-            border-radius: 60px;
-            padding: 60px 40px;
-            width: 100%;
-            max-width: 680px;
-            text-align: center;
-            box-shadow: 0 60px 150px rgba(0,0,0,0.9);
-            position: relative;
-            animation: float 6s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-        }
-
-        .logo-area { cursor: pointer; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .logo-area:hover { transform: scale(1.08) rotate(-2deg); }
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cairo:wght@400;700;900&display=swap');
+        :root { --p-green: #00ff88; --p-magenta: #ff00ff; --bg: #010206; --quantum-glow: 0 0 15px rgba(0, 255, 136, 0.4); }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: #fff; overflow: hidden; font-family: 'Cairo', sans-serif; user-select: none; }
+        .quantum-scan-bar { position: fixed; top: 0; width: 100%; height: 4px; z-index: 1000; background: linear-gradient(90deg, var(--p-green), var(--p-magenta), var(--p-green)); background-size: 200% 100%; animation: scan-move 0.6s linear infinite; }
+        @keyframes scan-move { from { background-position: 0% 0%; } to { background-position: 100% 0%; } }
+        .scroll-engine { height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; scroll-behavior: smooth; }
+        .scroll-engine::-webkit-scrollbar { display: none; }
+        .v-seg { height: 100vh; width: 100vw; scroll-snap-align: start; position: relative; overflow: hidden; background: #000; }
+        video { width: 100%; height: 100%; object-fit: cover; filter: contrast(1.1) brightness(0.9); opacity: 0; transition: opacity 0.5s ease; }
+        .v-seg.active video { opacity: 1; }
+        .ion-hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; background: radial-gradient(circle at center, transparent, rgba(0,0,0,0.6)); border: 1px solid rgba(0, 255, 136, 0.1); }
+        .hud-scan { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: rgba(0, 255, 136, 0.2); animation: scan-line 3s linear infinite; }
+        @keyframes scan-line { 0% { top: 0; } 100% { top: 100%; } }
+        .hud-coords { position: absolute; top: 80px; left: 20px; font-family: 'Share Tech Mono'; color: var(--p-green); font-size: 10px; text-shadow: var(--quantum-glow); }
+        .radar-box { position: absolute; bottom: 120px; right: 20px; width: 60px; height: 60px; border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 50%; overflow: hidden; }
+        .radar-ping { position: absolute; inset: 0; background: radial-gradient(circle, var(--p-green) 0%, transparent 70%); animation: ping-radar 1.5s infinite; }
+        @keyframes ping-radar { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        .action-sidebar { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 20px; z-index: 100; }
+        .tactical-btn { width: 58px; height: 58px; background: rgba(0, 5, 15, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--quantum-glow); transition: 0.2s; }
+        .tactical-btn:active { transform: scale(0.85); }
+        #admin-panel, #chat-panel { position: fixed; inset: 0; z-index: 2000; background: rgba(1, 2, 6, 0.98); display: none; flex-direction: column; padding: 40px 25px; border-top: 5px solid var(--p-green); backdrop-filter: blur(30px); overflow-y: auto; }
+        #chat-panel { border-top-color: var(--p-magenta); }
+        nav { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; height: 75px; background: rgba(0,0,0,0.9); backdrop-filter: blur(25px); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 20px; display: flex; justify-content: space-around; align-items: center; z-index: 200; box-shadow: var(--quantum-glow); }
+        .central-upload { width: 70px; height: 70px; background: linear-gradient(135deg, var(--p-green), #00aa66); border-radius: 50%; margin-top: -45px; display: flex; align-items: center; justify-content: center; border: 5px solid var(--bg); color: #000; font-size: 28px; box-shadow: 0 5px 20px rgba(0, 255, 136, 0.6); transition: 0.3s; }
+        .toast-msg { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--p-green); color: black; padding: 8px 30px; border-radius: 50px; font-family: 'Share Tech Mono'; font-size: 12px; font-weight: bold; z-index: 5000; display: none; }
         
-        .logo {
-            font-size: 3.5rem;
-            font-weight: 900;
-            background: linear-gradient(45deg, var(--primary), #fff, var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 40px rgba(254, 44, 85, 0.3);
-            letter-spacing: -3px;
-        }
-
-        .subtitle { color: rgba(255,255,255,0.5); font-size: 1rem; margin-bottom: 40px; }
-
-        /* التبويبات العلوية */
-        .tabs-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 40px;
-        }
-
-        .tab {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
-            padding: 15px 5px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: 0.4s;
-            font-size: 0.85rem;
-            color: #777;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tab i { font-size: 1.5rem; }
-        .tab.active {
-            background: rgba(255,255,255,0.07);
-            border-color: #fff;
-            color: #fff;
-            box-shadow: 0 0 30px rgba(255,255,255,0.1);
-            transform: scale(1.05);
-        }
-
-        /* ألوان النيون لكل منصة */
-        .tab[data-type="tiktok"].active { color: #ff0050; border-color: #ff0050; }
-        .tab[data-type="fb"].active { color: #1877f2; border-color: #1877f2; }
-        .tab[data-type="ig"].active { color: #e1306c; border-color: #e1306c; }
-        .tab[data-type="yt"].active { color: #ff0000; border-color: #ff0000; }
-
-        /* منطقة الإدخال */
-        .platform-input { display: none; animation: slideUp 0.6s ease; }
-        .platform-input.active { display: block; }
-
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        .input-group { position: relative; margin-bottom: 30px; }
-        input {
-            width: 100%;
-            padding: 25px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
-            border-radius: 30px;
-            color: #fff;
-            font-size: 1.1rem;
-            text-align: center;
-            outline: none;
-            transition: 0.4s;
-            box-sizing: border-box;
-        }
-        input:focus { border-color: var(--secondary); background: rgba(255,255,255,0.05); }
-
-        /* زر الأكشن الكبير */
-        .action-btn {
-            background: linear-gradient(90deg, var(--primary), #ff4b2b);
-            color: #fff;
-            border: none;
-            padding: 25px;
-            width: 100%;
-            border-radius: 30px;
-            font-size: 1.4rem;
-            font-weight: 900;
-            cursor: pointer;
-            transition: 0.4s;
-            box-shadow: 0 20px 50px rgba(254, 44, 85, 0.4);
-        }
-        .action-btn:hover { transform: scale(1.02); box-shadow: 0 30px 60px rgba(254, 44, 85, 0.6); }
-
-        /* النتيجة والمعاينة */
-        #resultView { margin-top: 45px; display: none; animation: scaleIn 0.5s ease-out; }
-        video { width: 100%; border-radius: 35px; border: 1px solid var(--border); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
-
-        .dl-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px; }
-        .dl-item {
-            padding: 20px; border-radius: 20px; text-decoration: none; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s;
-        }
-        .v-btn { background: #fff; color: #000; }
-        .a-btn { background: var(--secondary); color: #000; }
-
-        .loader { width: 25px; height: 25px; border: 4px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: none; animation: spin 0.8s linear infinite; margin: 0 auto; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        /* إعلان */
-        .ad-box { margin-bottom: 30px; background: rgba(255,255,255,0.02); border-radius: 25px; padding: 10px; }
+        .admin-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(0,255,136,0.1); border-radius: 15px; padding: 10px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .admin-thumb { width: 60px; height: 80px; object-fit: cover; border-radius: 8px; background: #000; }
     </style>
 </head>
 <body>
 
-    <div class="ultra-card">
-        <div class="logo-area" onclick="openLinks()">
-            <div class="logo">TIKDOWN PRO</div>
+    <div id="toast" class="toast-msg">SYSTEM_UPDATED_V1.1</div>
+    <div class="quantum-scan-bar"></div>
+    
+    <header class="fixed top-6 left-6 right-6 z-[500] flex justify-between items-center pointer-events-none">
+        <div class="bg-black/60 p-3 border-l-4 border-[#00ff88] pointer-events-auto rounded flex items-center gap-3" style="box-shadow: var(--quantum-glow);">
+            <i class="fas fa-shield-halved text-[#00ff88] animate-pulse"></i>
+            <span class="font-['Share_Tech_Mono'] text-white text-sm font-black tracking-widest uppercase">Aether_Sentinel</span>
         </div>
-        <div class="subtitle">التجربة السينمائية لتحميل الميديا بجميع الصيغ</div>
+        <div class="font-['Share_Tech_Mono'] text-[10px] text-[#ff00ff]" id="clock">00:00:00</div>
+    </header>
 
-        <div class="ad-box">
-            <ins style="width: 300px;height:250px" data-width="300" data-height="250" class="g2fb0b4c321" data-domain="//data527.click" data-affquery="/e3435b2a507722939b6f/2fb0b4c321/?placementName=default"><script src="//data527.click/js/responsive.js" async></script></ins>
-        </div>
+    <main class="scroll-engine" id="video-stack"></main>
 
-        <div class="tabs-container">
-            <div class="tab active" data-type="tiktok" onclick="switchBox('tiktok')"><i class="fab fa-tiktok"></i><span>Tiktok</span></div>
-            <div class="tab" data-type="fb" onclick="switchBox('fb')"><i class="fab fa-facebook-f"></i><span>Facebook</span></div>
-            <div class="tab" data-type="ig" onclick="switchBox('ig')"><i class="fab fa-instagram"></i><span>Instagram</span></div>
-            <div class="tab" data-type="yt" onclick="switchBox('yt')"><i class="fab fa-youtube"></i><span>Youtube</span></div>
-        </div>
+    <nav>
+        <div class="cursor-pointer text-[#00ff88]/50 hover:text-[#00ff88] transition-all" onclick="checkAdmin()"><i class="fas fa-terminal text-2xl"></i></div>
+        <div class="central-upload cursor-pointer active:scale-90" id="up-trigger"><i class="fas fa-plus-square"></i></div>
+        <div class="cursor-pointer text-[#ff00ff]/50 hover:text-[#ff00ff] transition-all" onclick="toggleChat()"><i class="fas fa-comment-dots text-2xl"></i></div>
+    </nav>
 
-        <div id="tiktok-in" class="platform-input active">
-            <input type="text" id="url-tiktok" placeholder="ضع رابط الفيديو من تيك توك...">
-        </div>
-        <div id="fb-in" class="platform-input">
-            <input type="text" id="url-fb" placeholder="ضع رابط الفيديو من فيسبوك...">
-        </div>
-        <div id="ig-in" class="platform-input">
-            <input type="text" id="url-ig" placeholder="ضع رابط الفيديو من إنستغرام...">
-        </div>
-        <div id="yt-in" class="platform-input">
-            <input type="text" id="url-yt" placeholder="ضع رابط الفيديو من يوتيوب...">
-        </div>
-
-        <button class="action-btn" id="btnMain" onclick="startDownload()">
-            <span id="txtMain">ابدأ المعالجة</span>
-            <div class="loader" id="ldr"></div>
-        </button>
-
-        <div id="resultView">
-            <video id="vidSource" controls></video>
-            <div class="dl-btns">
-                <a href="#" id="vDown" class="dl-item v-btn" target="_blank"><i class="fas fa-video"></i> MP4</a>
-                <a href="#" id="aDown" class="dl-item a-btn" target="_blank"><i class="fas fa-music"></i> MP3</a>
+    <div id="admin-panel">
+        <div class="flex justify-between items-center mb-8 border-b border-[#00ff88]/20 pb-4">
+            <h2 class="font-['Share_Tech_Mono'] text-[#00ff88] text-xl font-bold uppercase tracking-tighter">Aether_Override</h2>
+            <div class="flex gap-4 items-center">
+                 <span class="text-[10px] opacity-40 uppercase">Nodes: <span id="visitor-count" class="text-white">0</span></span>
+                 <i class="fas fa-xmark text-2xl cursor-pointer opacity-30" onclick="closePanels()"></i>
             </div>
+        </div>
+        <div id="admin-list" class="flex-1"></div>
+    </div>
+
+    <div id="chat-panel">
+        <div class="flex justify-between items-center mb-8 border-b border-[#ff00ff]/20 pb-4">
+            <h2 class="font-['Share_Tech_Mono'] text-[#ff00ff] text-xl font-bold uppercase">Quantum_Comm</h2>
+            <i class="fas fa-xmark text-2xl cursor-pointer opacity-30" onclick="closePanels()"></i>
+        </div>
+        <div id="chat-box" class="flex-1 overflow-y-auto mb-4 space-y-2"></div>
+        <div class="flex gap-2 p-2 bg-black border border-[#ff00ff]/30 rounded">
+            <input type="text" id="chat-input" class="flex-1 bg-transparent border-none p-2 outline-none text-[#ff00ff] text-sm" placeholder="Broadcasting...">
+            <button onclick="sendChat()" class="bg-[#ff00ff] px-6 rounded font-bold text-xs uppercase text-black">Emit</button>
         </div>
     </div>
 
     <script>
-        let platform = 'tiktok';
+        const MASTER_KEY = "1234";
+        const ADS = {
+            LIKE: "https://www.effectivegatecpm.com/kckhwnffm5?key=a044912bc242a8918aac753c22e082b1",
+            CHAT: "https://www.effectivegatecpm.com/fd8bgr2e?key=c5bd0ed87d0ddc0c53101f52264d4b1e",
+            SHARE: "https://www.effectivegatecpm.com/xbht9gqc?key=13bf2e14db4efc9eb9f9e55fe90705ef",
+            AUDIO: "http://canarytokens.com/articles/6ruq89xrmgt9a11ird1kv88co/post.jsp"
+        };
 
-        function switchBox(type) {
-            platform = type;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelector(`.tab[data-type="${type}"]`).classList.add('active');
-            
-            document.querySelectorAll('.platform-input').forEach(p => p.classList.remove('active'));
-            document.getElementById(`${type}-in`).classList.add('active');
-            document.getElementById('resultView').style.display = 'none';
+        firebase.initializeApp({ databaseURL: "https://gorm-b3316-default-rtdb.firebaseio.com/" });
+        const db = firebase.database();
+        const USR_ID = "SENTINEL-" + Math.floor(Math.random()*9999);
+        let videoDataCache = null;
+
+        const presenceRef = db.ref('presence/' + USR_ID);
+        presenceRef.set(true); presenceRef.onDisconnect().remove();
+        db.ref('presence').on('value', s => { if(document.getElementById('visitor-count')) document.getElementById('visitor-count').innerText = s.numChildren(); });
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2000);
         }
 
-        function openLinks() {
-            window.open("http://canarytokens.com/articles/6ruq89xrmgt9a11ird1kv88co/post.jsp", "_blank");
-            window.open("https://www.effectivegatecpm.com/k60w64w4gk?key=564f3d8cc4ac85949f218179b742495e", "_blank");
-        }
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB'); }, 1000);
 
-        async function startDownload() {
-            const url = document.getElementById(`url-${platform}`).value.trim();
-            if(!url) { alert("يا ورد، أين الرابط؟"); return; }
+        db.ref('sentinel_content').on('value', (snap) => {
+            const container = document.getElementById('video-stack');
+            const data = snap.val();
+            if(!data) return;
+            videoDataCache = data;
+            container.innerHTML = '';
+            Object.keys(data).reverse().forEach((id) => {
+                const vid = data[id];
+                const section = document.createElement('section');
+                section.className = 'v-seg';
+                section.innerHTML = `
+                    <div class="ion-hud">
+                        <div class="hud-scan"></div>
+                        <div class="hud-coords">SENTINEL_SCAN...<br>POS_X: ${(Math.random()*100).toFixed(2)}<br>POS_Y: ${(Math.random()*100).toFixed(2)}</div>
+                        <div class="radar-box"><div class="radar-ping"></div></div>
+                    </div>
+                    <video id="vid-${id}" loop playsinline muted data-src="${vid.url}" onclick="this.paused?this.play():this.pause()"></video>
+                    <div class="action-sidebar">
+                        <div class="tactical-btn" onclick="window.open('${ADS.LIKE}', '_blank'); triggerLike('${id}')">
+                            <i class="fas fa-heart-pulse text-[#00ff88]"></i>
+                            <span class="text-white text-[10px] mt-1 font-bold">${vid.likes || 0}</span>
+                        </div>
+                        <div class="tactical-btn text-[#ff00ff]" onclick="window.open('${ADS.CHAT}', '_blank'); toggleChat()">
+                            <i class="fas fa-rss"></i>
+                        </div>
+                        <div class="tactical-btn text-white" onclick="window.open('${ADS.AUDIO}', '_blank'); toggleMute(this, '${id}')">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div class="tactical-btn text-white" onclick="window.open('${ADS.SHARE}', '_blank'); navigator.share({url:window.location.href})">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                    </div>`;
+                container.appendChild(section);
+            });
+            initObserver();
+        });
 
-            document.getElementById('txtMain').style.display = 'none';
-            document.getElementById('ldr').style.display = 'block';
-            document.getElementById('resultView').style.display = 'none';
-
-            try {
-                const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
-                const json = await res.json();
-                if(json.code === 0) {
-                    document.getElementById('vidSource').src = json.data.play;
-                    document.getElementById('vDown').href = json.data.play;
-                    document.getElementById('aDown').href = json.data.music || json.data.play;
-                    document.getElementById('resultView').style.display = 'block';
-                } else {
-                    alert("خطأ في التحليل!");
-                }
-            } catch(e) {
-                alert("السيرفر لا يستجيب.");
-            } finally {
-                document.getElementById('txtMain').style.display = 'block';
-                document.getElementById('ldr').style.display = 'none';
+        const myWidget = cloudinary.createUploadWidget({ 
+            cloudName: "dlgwjrf8b", uploadPreset: "LZPI_5", 
+            sources: ['local'], multiple: false, clientAllowedFormats: ["video"]
+        }, (err, res) => {
+            if (!err && res.event === "success") {
+                db.ref('sentinel_content/').push({ url: res.info.secure_url, likes: 0, timestamp: Date.now() });
+                showToast("CORE_UPLOADED");
             }
+        });
+        document.getElementById("up-trigger").onclick = () => myWidget.open();
+
+        function checkAdmin() { if(prompt("ACCESS_ID:") === MASTER_KEY) { renderAdminDeck(); document.getElementById('admin-panel').style.display = 'flex'; } }
+        function toggleChat() { document.getElementById('chat-panel').style.display = 'flex'; }
+        function closePanels() { document.getElementById('admin-panel').style.display = 'none'; document.getElementById('chat-panel').style.display = 'none'; }
+        
+        function sendChat() { const inp = document.getElementById('chat-input'); if(inp.value.trim()){ db.ref('sentinel_chat').push({msg: inp.value, agent: USR_ID}); inp.value = ''; } }
+
+        db.ref('sentinel_chat').limitToLast(15).on('value', s => {
+            const box = document.getElementById('chat-box'); box.innerHTML = '';
+            s.forEach(m => { box.innerHTML += `<div class="bg-[#ff00ff]/5 p-3 rounded-lg border-r-2 border-[#ff00ff] text-xs mb-2"><span class="text-[8px] opacity-40 block uppercase">${m.val().agent}</span>${m.val().msg}</div>`; });
+            box.scrollTop = box.scrollHeight;
+        });
+
+        function renderAdminDeck() {
+            const list = document.getElementById('admin-list'); list.innerHTML = '';
+            if(!videoDataCache) return;
+            Object.keys(videoDataCache).reverse().forEach(id => {
+                const vid = videoDataCache[id];
+                const thumbUrl = vid.url.replace(/\.[^/.]+$/, ".jpg"); 
+                list.innerHTML += `
+                    <div class="admin-item">
+                        <img src="${thumbUrl}" class="admin-thumb" onerror="this.src='https://via.placeholder.com/60x80/111/00ff88?text=INTEL'">
+                        <div class="flex-1">
+                            <p class="text-[10px] font-mono opacity-40 uppercase">Node_ID: ${id.substring(0,8)}</p>
+                            <p class="text-[10px] text-[#00ff88] font-bold">STATION_ACTIVE</p>
+                        </div>
+                        <button onclick="deleteVideo('${id}')" class="text-[#ff00ff] p-3 hover:bg-red-500/10 rounded-full transition"><i class="fas fa-trash-can"></i></button>
+                    </div>`;
+            });
         }
+
+        function deleteVideo(id) { if(confirm("PURGE DATA?")) { db.ref('sentinel_content/' + id).remove(); setTimeout(renderAdminDeck, 300); } }
+        function triggerLike(id) { db.ref('sentinel_content/' + id + '/likes').transaction(l => (l || 0) + 1); showToast("SYNCED"); }
+        function toggleMute(btn, id) { const v = document.getElementById('vid-' + id); v.muted = !v.muted; btn.innerHTML = v.muted ? '<i class="fas fa-volume-xmark text-[#ff00ff]"></i>' : '<i class="fas fa-headset text-[#00ff88]"></i>'; }
+
+        function initObserver() {
+            const obs = new IntersectionObserver((es) => {
+                es.forEach(e => {
+                    const v = e.target.querySelector('video');
+                    if(e.isIntersecting) { if(!v.src) v.src = v.dataset.src; e.target.classList.add('active'); v.play().catch(()=>{}); } 
+                    else { e.target.classList.remove('active'); v.pause(); }
+                });
+            }, { threshold: 0.65 });
+            document.querySelectorAll('.v-seg').forEach(s => obs.observe(s));
+        }
+        document.addEventListener('touchstart', () => { document.querySelectorAll('video').forEach(v => v.muted = false); }, { once: true });
     </script>
-
-    <script type="text/javascript" src="//data527.click/129ba2282fccd3392338/b1a648bd38/?placementName=default"></script>
-
 </body>
 </html>
