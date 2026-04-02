@@ -26,5 +26,5 @@ app.get('/status', (req, res) => {
 
 // تشغيل المحرك
 app.listen(PORT, () => {
-    console.log(Joker Engine active on port ${PORT} 🚀);
+    console.log(`Joker Engine active on port ${PORT} 🚀`);
 });
