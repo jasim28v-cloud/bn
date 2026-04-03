@@ -1,12 +1,12 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyA0i1EPCS5ZEZA_u7weqYhPL6cqExuj_eU",
-    authDomain: "toke-800a7.firebaseapp.com",
-    databaseURL: "https://toke-800a7-default-rtdb.firebaseio.com",
-    projectId: "toke-800a7",
-    storageBucket: "toke-800a7.firebasestorage.app",
-    messagingSenderId: "332051016484",
-    appId: "1:332051016484:web:f6b71128c6013d991b21b1",
-    measurementId: "G-HZZ98K6HB6"
+    apiKey: "AIzaSyDqh0Gtl0lIZl8Rt1PvdE67U8yyhjxpJdw",
+    authDomain: "gomr-3356f.firebaseapp.com",
+    databaseURL: "https://gomr-3356f-default-rtdb.firebaseio.com",
+    projectId: "gomr-3356f",
+    storageBucket: "gomr-3356f.firebasestorage.app",
+    messagingSenderId: "470296286364",
+    appId: "1:470296286364:web:2bb6e28a2095757da88959",
+    measurementId: "G-4MLFT3DHJB"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -17,10 +17,8 @@ const storage = firebase.storage();
 
 const CLOUD_NAME = 'daemk3hut';
 const UPLOAD_PRESET = 'fok2_k';
-
 const AGORA_APP_ID_CALL = '4017f66ea15f4ce088e8d8993a072a5b';
+const ADMIN_EMAIL = 'jasim88v@gmail.com';
+const ADMIN_PASSWORD = 'kk2314kk';
 
-const ADMIN_EMAIL = 'jasim300v@gmail.com';
-const ADMIN_PASSWORD = 'xx2314xx';
-
-console.log('✅ TOKE - Firebase, Cloudinary & Agora Ready');
+console.log('✅ VIBE - Firebase, Cloudinary & Agora Ready');
