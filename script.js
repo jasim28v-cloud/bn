@@ -15,6 +15,9 @@ let readModeActive = false;
 let hideLikesActive = false;
 let currentImageUrls = [];
 let currentImageIndex = 0;
+let lastPostKey = null;
+let isLoadingMore = false;
+let hasMorePosts = true;
 
 let agoraClient = null;
 let localTracks = { videoTrack: null, audioTrack: null };
@@ -432,6 +435,17 @@ async function startVideoCallWithCurrentUser() {
     });
 }
 
+async function startVideoCallWithUser(userId) {
+    const channelName = `call_${getChatId(currentUser.uid, userId)}`;
+    document.getElementById('videoCallModal').classList.add('open');
+    await startVideoCallWithAgora(channelName, currentUser.uid);
+    await db.ref(`notifications/${userId}`).push({
+        type: 'call', userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.name,
+        channelName: channelName, timestamp: Date.now(), read: false
+    });
+}
+
 // ==================== تسجيل الخروج ====================
 async function logout() {
     try {
@@ -478,11 +492,14 @@ async function login() {
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         showToast(`مرحباً ${currentUser.displayName || currentUser.name}!`);
+        lastPostKey = null;
+        hasMorePosts = true;
         loadFeed();
         loadNotifications();
         loadTrendingHashtags();
         loadDndStatus();
         checkScheduledPosts();
+        loadBadWordsReports();
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') document.body.classList.add('dark-mode');
         const savedReadMode = localStorage.getItem('readMode');
@@ -648,6 +665,45 @@ async function submitReport() {
     });
     showToast('تم إرسال البلاغ، شكراً لك');
     closeReportModal();
+    if (currentUser.isAdmin) loadBadWordsReports();
+}
+
+async function loadBadWordsReports() {
+    if (!currentUser?.isAdmin) return;
+    const reportsSnapshot = await db.ref('reports').once('value');
+    const reports = reportsSnapshot.val();
+    const container = document.getElementById('badWordsList');
+    if (!container) return;
+    
+    if (!reports) {
+        container.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد تقارير كلمات مسيئة</div>';
+        return;
+    }
+    
+    let badWordsMap = new Map();
+    for (const [postId, postReports] of Object.entries(reports)) {
+        for (const [reportId, report] of Object.entries(postReports)) {
+            const word = report.reason;
+            if (word) {
+                badWordsMap.set(word, (badWordsMap.get(word) || 0) + 1);
+            }
+        }
+    }
+    
+    if (badWordsMap.size === 0) {
+        container.innerHTML = '<div class="text-center p-4 text-gray-500">✅ لا توجد كلمات مسيئة مبلغ عنها</div>';
+        return;
+    }
+    
+    let html = '<div style="max-height: 300px; overflow-y: auto;">';
+    for (const [word, count] of badWordsMap.entries()) {
+        html += `<div class="admin-item bad-word-item">
+            <div><span style="font-weight: 600;">🚫 ${escapeHtml(word)}</span></div>
+            <div>تم الإبلاغ ${count} مرة</div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 // ==================== حظر وتقييد ====================
@@ -723,6 +779,12 @@ async function isBlocked(userId) {
 
 // ==================== إنشاء منشور ====================
 async function createPost() {
+    const publishBtn = document.getElementById('publishPostBtn');
+    if (publishBtn) {
+        publishBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => { if(publishBtn) publishBtn.style.transform = 'scale(1)'; }, 150);
+    }
+    
     let text = document.getElementById('postText')?.value;
     if (containsBadWords(text)) return showToast('⚠️ المنشور يحتوي على كلمات ممنوعة');
     if (!text && !selectedMediaFile) return showToast('الرجاء كتابة نص أو إضافة وسائط');
@@ -783,6 +845,8 @@ async function createPost() {
     selectedMediaFile = null;
     editingPostId = null;
     closeCompose();
+    lastPostKey = null;
+    hasMorePosts = true;
     loadFeed();
     loadTrendingHashtags();
     showToast('تم نشر المنشور بنجاح!');
@@ -800,39 +864,35 @@ async function deletePost(postId) {
         }
     }
     await db.ref(`posts/${postId}`).remove();
+    lastPostKey = null;
+    hasMorePosts = true;
     loadFeed();
     loadTrendingHashtags();
     showToast('تم حذف المنشور');
 }
 
-// ==================== إعجاب ====================
+// ==================== إعجاب فوري ====================
 async function likePost(postId) {
     const likeRef = db.ref(`posts/${postId}/likes/${currentUser.uid}`);
     const snapshot = await likeRef.once('value');
     const wasLiked = snapshot.exists();
     
-    // تحديث محلي فوري
     const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
     if (postCard) {
         const likeButton = postCard.querySelector('.post-action:first-child');
         const likesSpan = postCard.querySelector('.post-likes');
         if (likeButton) {
-            if (wasLiked) {
-                likeButton.classList.remove('active');
-            } else {
-                likeButton.classList.add('active');
-            }
+            if (wasLiked) likeButton.classList.remove('active');
+            else likeButton.classList.add('active');
         }
         if (likesSpan && !hideLikesActive) {
             let currentCount = parseInt(likesSpan.textContent) || 0;
             currentCount = wasLiked ? currentCount - 1 : currentCount + 1;
             likesSpan.textContent = `${currentCount} إعجاب`;
-            if (currentCount === 0) likesSpan.style.display = 'none';
-            else likesSpan.style.display = 'block';
+            likesSpan.style.display = currentCount === 0 ? 'none' : 'block';
         }
     }
     
-    // تنفيذ العملية في الخلفية
     if (wasLiked) {
         await likeRef.remove();
     } else {
@@ -904,23 +964,54 @@ async function loadTrendingHashtags() {
     }
 }
 
-// ==================== التغذية ====================
-async function loadFeed() {
+// ==================== التغذية مع Pagination ====================
+async function loadFeed(reset = true) {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
-    feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري التحميل...</span></div>';
-    const snapshot = await db.ref('posts').once('value');
+    
+    if (reset) {
+        feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري التحميل...</span></div>';
+        lastPostKey = null;
+        hasMorePosts = true;
+    }
+    
+    if (isLoadingMore) return;
+    isLoadingMore = true;
+    
+    let postsQuery = db.ref('posts').orderByKey().limitToLast(10);
+    if (lastPostKey) {
+        postsQuery = db.ref('posts').orderByKey().endAt(lastPostKey).limitToLast(10);
+    }
+    
+    const snapshot = await postsQuery.once('value');
     const posts = snapshot.val();
-    if (!posts) {
-        feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">لا توجد منشورات بعد</div>';
+    
+    if (!posts || Object.keys(posts).length === 0) {
+        if (reset) feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">لا توجد منشورات بعد</div>';
+        hasMorePosts = false;
+        isLoadingMore = false;
         return;
     }
+    
+    let postsArray = Object.values(posts).sort((a, b) => b.timestamp - a.timestamp);
+    
+    const firstKey = Object.keys(posts)[0];
+    if (firstKey === lastPostKey) {
+        hasMorePosts = false;
+        isLoadingMore = false;
+        return;
+    }
+    lastPostKey = Object.keys(posts)[0];
+    
     const blockedSnapshot = await db.ref(`users/${currentUser?.uid}/blockedUsers`).once('value');
     const blockedUsers = blockedSnapshot.val() || {};
+    
     const pinnedPostId = await db.ref(`users/${currentUser?.uid}/pinnedPost`).once('value');
     const pinnedId = pinnedPostId.val();
-    let postsArray = Object.values(posts).filter(post => !blockedUsers[post.userId]).sort((a, b) => b.timestamp - a.timestamp);
-    if (pinnedId) {
+    
+    postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
+    
+    if (reset && pinnedId) {
         const pinnedIndex = postsArray.findIndex(p => p.id === pinnedId);
         if (pinnedIndex > -1) {
             const pinnedPost = postsArray[pinnedIndex];
@@ -928,16 +1019,20 @@ async function loadFeed() {
             postsArray.unshift(pinnedPost);
         }
     }
-    let html = '';
+    
+    let html = reset ? '' : feedContainer.innerHTML;
+    if (reset) html = '';
+    
     for (const post of postsArray) {
         await incrementPostViews(post.id);
+        
         const userInfoSnapshot = await db.ref(`users/${post.userId}`).once('value');
         const userInfo = userInfoSnapshot.val();
         const isUserVerified = userInfo?.verified || false;
         const isLiked = post.likes && post.likes[currentUser?.uid];
         const likesCount = post.likes ? Object.keys(post.likes).length : 0;
         const isOwner = post.userId === currentUser?.uid;
-        const isPinned = pinnedId === post.id;
+        const isPinned = reset && pinnedId === post.id;
         const savedSnapshot = await db.ref(`savedPosts/${currentUser?.uid}/${post.id}`).once('value');
         const isSaved = savedSnapshot.exists();
         
@@ -1005,7 +1100,13 @@ async function loadFeed() {
                 <div class="post-header">
                     <div class="post-user-info" onclick="openProfile('${post.userId}')">
                         <div class="post-avatar">${post.userAvatar ? `<img src="${post.userAvatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div>
-                        <div><div class="post-username">${escapeHtml(post.userName)} ${isUserVerified ? '<i class="fas fa-check-circle text-[#ff6b35] text-xs mr-1"></i>' : ''}</div><div class="post-time">${formatTime(post.timestamp)} ${post.edited ? '· معدل' : ''}</div></div>
+                        <div>
+                            <div class="post-username">
+                                ${escapeHtml(post.userName)}
+                                ${isUserVerified ? '<i class="fas fa-check-circle verified-badge" style="color: #0095f6; font-size: 14px;"></i>' : ''}
+                            </div>
+                            <div class="post-time">${formatTime(post.timestamp)} ${post.edited ? '· معدل' : ''}</div>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 12px;">
                         ${(isOwner || currentUser?.isAdmin) ? `<button class="post-menu" onclick="event.stopPropagation(); deletePost('${post.id}')"><i class="fas fa-trash-alt"></i></button>` : ''}
@@ -1030,7 +1131,24 @@ async function loadFeed() {
             </div>
         `;
     }
-    feedContainer.innerHTML = html;
+    
+    if (reset) {
+        feedContainer.innerHTML = html;
+    } else {
+        const loadMoreDiv = feedContainer.querySelector('.load-more-btn');
+        if (loadMoreDiv) loadMoreDiv.remove();
+        feedContainer.innerHTML = html;
+    }
+    
+    if (hasMorePosts && !reset && postsArray.length > 0) {
+        const loadMoreBtn = document.createElement('div');
+        loadMoreBtn.className = 'load-more-btn';
+        loadMoreBtn.innerHTML = '<i class="fas fa-arrow-down"></i> تحميل المزيد';
+        loadMoreBtn.onclick = () => loadFeed(false);
+        feedContainer.appendChild(loadMoreBtn);
+    }
+    
+    isLoadingMore = false;
 }
 
 // ==================== البحث ====================
@@ -1106,7 +1224,8 @@ async function loadComments(postId) {
         const userSnapshot = await db.ref(`users/${comment.userId}`).once('value');
         const userData = userSnapshot.val();
         const isCommentOwner = comment.userId === currentUser?.uid;
-        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}</span><span style="font-size: 10px; color: #8e8e8e;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: #ff6b35; color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fas fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
+        const isVerified = userData?.verified || false;
+        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${isVerified ? '<i class="fas fa-check-circle" style="color: #0095f6; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; color: #8e8e8e;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: #ff6b35; color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fas fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
     }
     commentsList.innerHTML = html;
 }
@@ -1161,7 +1280,7 @@ async function openProfile(userId) {
     }
     const profileAvatarLarge = document.getElementById('profileAvatarLarge');
     profileAvatarLarge.innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fas fa-user text-5xl text-white flex items-center justify-center h-full"></i>';
-    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fas fa-check-circle text-[#ff6b35] text-sm mr-1"></i>' : ''}`;
+    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fas fa-check-circle verified-badge" style="color: #0095f6; font-size: 20px;"></i>' : ''}`;
     document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في VIBE ✨";
     const websiteEl = document.getElementById('profileWebsite');
     if (userData.website) websiteEl.innerHTML = `<a href="${userData.website}" target="_blank" style="color: #ff6b35;">${userData.website}</a>`;
@@ -1427,6 +1546,9 @@ async function markNotificationRead(notifId) {
 async function openAdminPanel() {
     if (currentUser.email !== ADMIN_EMAIL && !currentUser.isAdmin) return showToast('🚫 غير مصرح لك بالدخول إلى لوحة التحكم');
     showToast('🔧 جاري تحميل لوحة التحكم...');
+    
+    await loadBadWordsReports();
+    
     const usersSnapshot = await db.ref('users').once('value');
     const postsSnapshot = await db.ref('posts').once('value');
     const commentsSnapshot = await db.ref('comments').once('value');
@@ -1437,6 +1559,7 @@ async function openAdminPanel() {
     document.getElementById('adminUsersCount').textContent = usersCount;
     document.getElementById('adminPostsCount').textContent = postsCount;
     document.getElementById('adminCommentsCount').textContent = commentsCount;
+    
     let usersHtml = '';
     if (usersSnapshot.exists()) {
         for (const [uid, user] of Object.entries(usersSnapshot.val())) {
@@ -1447,6 +1570,7 @@ async function openAdminPanel() {
         }
     }
     document.getElementById('adminUsersList').innerHTML = usersHtml || '<div class="text-center p-4 text-gray-500">لا يوجد مستخدمين</div>';
+    
     let postsHtml = '';
     if (postsSnapshot.exists()) {
         for (const post of Object.values(postsSnapshot.val()).sort((a, b) => b.timestamp - a.timestamp).slice(0, 20)) {
@@ -1617,7 +1741,11 @@ function goToHome() {
 }
 
 function switchTab(tab) {
-    if (tab === 'home') loadFeed();
+    if (tab === 'home') {
+        lastPostKey = null;
+        hasMorePosts = true;
+        loadFeed();
+    }
 }
 
 function previewMedia(input, type) {
@@ -1650,7 +1778,14 @@ setInterval(async () => {
 const initLoader = document.getElementById('initLoader');
 
 auth.onAuthStateChanged(async (user) => {
-    if (initLoader) initLoader.style.display = 'none';
+    if (initLoader) {
+        setTimeout(() => {
+            initLoader.style.opacity = '0';
+            setTimeout(() => {
+                if (initLoader) initLoader.style.display = 'none';
+            }, 300);
+        }, 500);
+    }
     
     if (user) {
         currentUser = user;
@@ -1683,11 +1818,14 @@ auth.onAuthStateChanged(async (user) => {
             document.getElementById('hideLikesToggle')?.classList.add('active');
         }
         
+        lastPostKey = null;
+        hasMorePosts = true;
         loadFeed();
         loadNotifications();
         loadTrendingHashtags();
         loadDndStatus();
         checkScheduledPosts();
+        if (currentUser.isAdmin) loadBadWordsReports();
     } else {
         document.getElementById('authScreen').style.display = 'flex';
         document.getElementById('mainApp').style.display = 'none';
