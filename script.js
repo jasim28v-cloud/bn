@@ -15,9 +15,6 @@ let readModeActive = false;
 let hideLikesActive = false;
 let currentImageUrls = [];
 let currentImageIndex = 0;
-let lastPostKey = null;
-let isLoadingMore = false;
-let hasMorePosts = true;
 
 let agoraClient = null;
 let localTracks = { videoTrack: null, audioTrack: null };
@@ -492,8 +489,6 @@ async function login() {
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         showToast(`مرحباً ${currentUser.displayName || currentUser.name}!`);
-        lastPostKey = null;
-        hasMorePosts = true;
         loadFeed();
         loadNotifications();
         loadTrendingHashtags();
@@ -631,7 +626,7 @@ async function pinPost(postId) {
         showToast('تم إلغاء تثبيت المنشور');
     } else {
         await db.ref(`users/${currentUser.uid}/pinnedPost`).set(postId);
-        showToast('تم تثبيت المنشور في ملفك الشخصي');
+        showToast('تم تثبيت المنشور');
     }
     loadFeed();
     if (currentProfileUser) loadProfilePosts(currentProfileUser);
@@ -845,8 +840,6 @@ async function createPost() {
     selectedMediaFile = null;
     editingPostId = null;
     closeCompose();
-    lastPostKey = null;
-    hasMorePosts = true;
     loadFeed();
     loadTrendingHashtags();
     showToast('تم نشر المنشور بنجاح!');
@@ -864,8 +857,6 @@ async function deletePost(postId) {
         }
     }
     await db.ref(`posts/${postId}`).remove();
-    lastPostKey = null;
-    hasMorePosts = true;
     loadFeed();
     loadTrendingHashtags();
     showToast('تم حذف المنشور');
@@ -964,44 +955,23 @@ async function loadTrendingHashtags() {
     }
 }
 
-// ==================== التغذية مع Pagination ====================
-async function loadFeed(reset = true) {
+// ==================== التغذية - جميع المنشورات بدون limit ====================
+async function loadFeed() {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
     
-    if (reset) {
-        feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري التحميل...</span></div>';
-        lastPostKey = null;
-        hasMorePosts = true;
-    }
+    feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري تحميل جميع المنشورات...</span></div>';
     
-    if (isLoadingMore) return;
-    isLoadingMore = true;
-    
-    let postsQuery = db.ref('posts').orderByKey().limitToLast(10);
-    if (lastPostKey) {
-        postsQuery = db.ref('posts').orderByKey().endAt(lastPostKey).limitToLast(10);
-    }
-    
-    const snapshot = await postsQuery.once('value');
+    // ✅ تمت إزالة limitToLast(10) - الآن يجلب جميع المنشورات
+    const snapshot = await db.ref('posts').once('value');
     const posts = snapshot.val();
     
     if (!posts || Object.keys(posts).length === 0) {
-        if (reset) feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">لا توجد منشورات بعد</div>';
-        hasMorePosts = false;
-        isLoadingMore = false;
+        feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">لا توجد منشورات بعد</div>';
         return;
     }
     
     let postsArray = Object.values(posts).sort((a, b) => b.timestamp - a.timestamp);
-    
-    const firstKey = Object.keys(posts)[0];
-    if (firstKey === lastPostKey) {
-        hasMorePosts = false;
-        isLoadingMore = false;
-        return;
-    }
-    lastPostKey = Object.keys(posts)[0];
     
     const blockedSnapshot = await db.ref(`users/${currentUser?.uid}/blockedUsers`).once('value');
     const blockedUsers = blockedSnapshot.val() || {};
@@ -1011,7 +981,7 @@ async function loadFeed(reset = true) {
     
     postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
     
-    if (reset && pinnedId) {
+    if (pinnedId) {
         const pinnedIndex = postsArray.findIndex(p => p.id === pinnedId);
         if (pinnedIndex > -1) {
             const pinnedPost = postsArray[pinnedIndex];
@@ -1020,8 +990,7 @@ async function loadFeed(reset = true) {
         }
     }
     
-    let html = reset ? '' : feedContainer.innerHTML;
-    if (reset) html = '';
+    let html = '';
     
     for (const post of postsArray) {
         await incrementPostViews(post.id);
@@ -1032,7 +1001,7 @@ async function loadFeed(reset = true) {
         const isLiked = post.likes && post.likes[currentUser?.uid];
         const likesCount = post.likes ? Object.keys(post.likes).length : 0;
         const isOwner = post.userId === currentUser?.uid;
-        const isPinned = reset && pinnedId === post.id;
+        const isPinned = pinnedId === post.id;
         const savedSnapshot = await db.ref(`savedPosts/${currentUser?.uid}/${post.id}`).once('value');
         const isSaved = savedSnapshot.exists();
         
@@ -1132,23 +1101,8 @@ async function loadFeed(reset = true) {
         `;
     }
     
-    if (reset) {
-        feedContainer.innerHTML = html;
-    } else {
-        const loadMoreDiv = feedContainer.querySelector('.load-more-btn');
-        if (loadMoreDiv) loadMoreDiv.remove();
-        feedContainer.innerHTML = html;
-    }
-    
-    if (hasMorePosts && !reset && postsArray.length > 0) {
-        const loadMoreBtn = document.createElement('div');
-        loadMoreBtn.className = 'load-more-btn';
-        loadMoreBtn.innerHTML = '<i class="fas fa-arrow-down"></i> تحميل المزيد';
-        loadMoreBtn.onclick = () => loadFeed(false);
-        feedContainer.appendChild(loadMoreBtn);
-    }
-    
-    isLoadingMore = false;
+    feedContainer.innerHTML = html;
+    console.log(`✅ تم تحميل ${postsArray.length} منشور (جميع المنشورات بدون حد أقصى)`);
 }
 
 // ==================== البحث ====================
@@ -1737,13 +1691,11 @@ function openSearch() {
 }
 
 function goToHome() {
-    switchTab('home');
+    loadFeed();
 }
 
 function switchTab(tab) {
     if (tab === 'home') {
-        lastPostKey = null;
-        hasMorePosts = true;
         loadFeed();
     }
 }
@@ -1818,8 +1770,6 @@ auth.onAuthStateChanged(async (user) => {
             document.getElementById('hideLikesToggle')?.classList.add('active');
         }
         
-        lastPostKey = null;
-        hasMorePosts = true;
         loadFeed();
         loadNotifications();
         loadTrendingHashtags();
