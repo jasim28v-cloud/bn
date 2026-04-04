@@ -16,19 +16,20 @@ let hideLikesActive = false;
 let currentImageUrls = [];
 let currentImageIndex = 0;
 
-// ==================== متغيرات الـ Infinite Scroll ====================
-let isLoadingMore = false;
+// ==================== متغيرات Infinite Scroll ====================
+let allPostsCache = [];
+let currentDisplayCount = 0;
+let isLoadingPosts = false;
 let hasMorePosts = true;
-let lastPostTimestamp = null;
-let allPostsCache = []; // تخزين مؤقت للمنشورات المصنفة
-let currentDisplayCount = 10; // عدد المنشورات المعروضة حالياً
-const POSTS_PER_BATCH = 10; // عدد المنشورات لكل تحميل
+const POSTS_PER_PAGE = 8;
+let postsContainer = null;
+let scrollListenerAdded = false;
 
 let agoraClient = null;
 let localTracks = { videoTrack: null, audioTrack: null };
 let isCallActive = false;
 
-let badWordsList = ['كس', 'عير', 'قحب', 'زنا', 'سكس', 'porn', 'sex', 'fuck', 'shit', 'bitch'];
+let badWordsList = []; // تبدأ فارغة - المدير يضيفها
 
 // ==================== دوال مساعدة ====================
 function showToast(message, duration = 2000) {
@@ -94,7 +95,7 @@ function extractHashtags(text) {
 }
 
 function containsBadWords(text) {
-    if (!text) return false;
+    if (!text || badWordsList.length === 0) return false;
     const lowerText = text.toLowerCase();
     for (const word of badWordsList) {
         if (lowerText.includes(word.toLowerCase())) return true;
@@ -103,7 +104,7 @@ function containsBadWords(text) {
 }
 
 function filterBadWords(text) {
-    if (!text) return '';
+    if (!text || badWordsList.length === 0) return text;
     let filtered = text;
     for (const word of badWordsList) {
         const regex = new RegExp(word, 'gi');
@@ -128,6 +129,34 @@ async function uploadToCloudinary(file) {
         showToast('فشل رفع الملف');
         return null;
     }
+}
+
+// ==================== إدارة الكلمات الممنوعة (لوحة التحكم) ====================
+async function loadBadWordsList() {
+    const snapshot = await db.ref('badWords').once('value');
+    const words = snapshot.val();
+    if (words) {
+        badWordsList = Object.values(words);
+    } else {
+        badWordsList = [];
+    }
+    console.log('📝 الكلمات الممنوعة:', badWordsList);
+}
+
+async function addBadWord(word) {
+    if (!word.trim()) return;
+    const newWordRef = db.ref('badWords').push();
+    await newWordRef.set(word.trim().toLowerCase());
+    await loadBadWordsList();
+    showToast(`تمت إضافة كلمة: ${word}`);
+    if (currentUser?.isAdmin) openAdminPanel();
+}
+
+async function removeBadWord(wordId, word) {
+    await db.ref(`badWords/${wordId}`).remove();
+    await loadBadWordsList();
+    showToast(`تم حذف كلمة: ${word}`);
+    if (currentUser?.isAdmin) openAdminPanel();
 }
 
 // ==================== التسجيل الصوتي ====================
@@ -289,7 +318,7 @@ async function checkScheduledPosts() {
                 });
                 await db.ref(`scheduledPosts/${currentUser.uid}/${id}`).remove();
                 showToast('تم نشر المنشور المجدول');
-                await refreshFeedCache(); // تحديث الكاش بعد النشر المجدول
+                await refreshFeedCache();
             }
         }
     }
@@ -485,13 +514,13 @@ async function login() {
         } else {
             await db.ref(`users/${currentUser.uid}`).set({
                 uid: currentUser.uid, name: currentUser.displayName || email.split('@')[0],
-                email: email, bio: "مرحباً! أنا في VIBE ✨", avatar: "", cover: "",
+                email: email, bio: "مرحباً! أنا في المنصة ✨", avatar: "", cover: "",
                 website: "", verified: false, isAdmin: false, blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
             });
         }
         if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
             showToast('🌟 مرحباً بك في لوحة التحكم يا مدير!');
-            await db.ref(`users/${currentUser.uid}`).update({ isAdmin: true, verified: true, name: 'Admin VIBE' });
+            await db.ref(`users/${currentUser.uid}`).update({ isAdmin: true, verified: true, name: 'Admin' });
             currentUser.isAdmin = true;
             currentUser.verified = true;
         }
@@ -499,15 +528,13 @@ async function login() {
         document.getElementById('mainApp').style.display = 'block';
         showToast(`مرحباً ${currentUser.displayName || currentUser.name}!`);
         
-        // إعادة تعيين متغيرات الـ Infinite Scroll
         resetInfiniteScroll();
-        
         await loadFeed();
         loadNotifications();
         loadTrendingHashtags();
         loadDndStatus();
         checkScheduledPosts();
-        loadBadWordsReports();
+        await loadBadWordsList();
         
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') document.body.classList.add('dark-mode');
@@ -543,7 +570,7 @@ async function register() {
         await userCredential.user.updateProfile({ displayName: name });
         await db.ref(`users/${userCredential.user.uid}`).set({
             uid: userCredential.user.uid, name: name, email: email,
-            bio: "مرحباً! أنا في VIBE ✨", avatar: "", cover: "", website: "",
+            bio: "مرحباً! أنا في المنصة ✨", avatar: "", cover: "", website: "",
             verified: false, isAdmin: email === ADMIN_EMAIL, blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
         });
         currentUser = userCredential.user;
@@ -676,45 +703,6 @@ async function submitReport() {
     });
     showToast('تم إرسال البلاغ، شكراً لك');
     closeReportModal();
-    if (currentUser.isAdmin) loadBadWordsReports();
-}
-
-async function loadBadWordsReports() {
-    if (!currentUser?.isAdmin) return;
-    const reportsSnapshot = await db.ref('reports').once('value');
-    const reports = reportsSnapshot.val();
-    const container = document.getElementById('badWordsList');
-    if (!container) return;
-    
-    if (!reports) {
-        container.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد تقارير كلمات مسيئة</div>';
-        return;
-    }
-    
-    let badWordsMap = new Map();
-    for (const [postId, postReports] of Object.entries(reports)) {
-        for (const [reportId, report] of Object.entries(postReports)) {
-            const word = report.reason;
-            if (word) {
-                badWordsMap.set(word, (badWordsMap.get(word) || 0) + 1);
-            }
-        }
-    }
-    
-    if (badWordsMap.size === 0) {
-        container.innerHTML = '<div class="text-center p-4 text-gray-500">✅ لا توجد كلمات مسيئة مبلغ عنها</div>';
-        return;
-    }
-    
-    let html = '<div style="max-height: 300px; overflow-y: auto;">';
-    for (const [word, count] of badWordsMap.entries()) {
-        html += `<div class="admin-item bad-word-item">
-            <div><span style="font-weight: 600;">🚫 ${escapeHtml(word)}</span></div>
-            <div>تم الإبلاغ ${count} مرة</div>
-        </div>`;
-    }
-    html += '</div>';
-    container.innerHTML = html;
 }
 
 // ==================== حظر وتقييد ====================
@@ -857,7 +845,7 @@ async function createPost() {
     editingPostId = null;
     closeCompose();
     
-    await refreshFeedCache(); // تحديث الكاش بعد النشر
+    await refreshFeedCache();
     loadTrendingHashtags();
     showToast('تم نشر المنشور بنجاح!');
 }
@@ -973,9 +961,9 @@ async function loadTrendingHashtags() {
     }
 }
 
-// ==================== التغذية - مع Infinite Scroll ====================
+// ==================== Infinite Scroll - التحميل المتدرج ====================
 
-// دالة لجلب وتخزين جميع المنشورات في الكاش (مرة واحدة فقط)
+// دالة تحميل كل المنشورات إلى الكاش (مرة واحدة)
 async function loadAllPostsToCache() {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
@@ -991,53 +979,53 @@ async function loadAllPostsToCache() {
         return;
     }
     
-    // تحويل المنشورات إلى مصفوفة وترتيبها تنازلياً
+    // تحويل المنشورات إلى مصفوفة وترتيبها
     let postsArray = Object.values(posts).sort((a, b) => b.timestamp - a.timestamp);
     
     // فلترة المحظورين
-    const blockedSnapshot = await db.ref(`users/${currentUser?.uid}/blockedUsers`).once('value');
-    const blockedUsers = blockedSnapshot.val() || {};
-    postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
+    if (currentUser) {
+        const blockedSnapshot = await db.ref(`users/${currentUser.uid}/blockedUsers`).once('value');
+        const blockedUsers = blockedSnapshot.val() || {};
+        postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
+    }
     
     // معالجة المنشور المثبت
-    const pinnedPostId = await db.ref(`users/${currentUser?.uid}/pinnedPost`).once('value');
-    const pinnedId = pinnedPostId.val();
-    
-    if (pinnedId) {
-        const pinnedIndex = postsArray.findIndex(p => p.id === pinnedId);
-        if (pinnedIndex > -1) {
-            const pinnedPost = postsArray[pinnedIndex];
-            postsArray.splice(pinnedIndex, 1);
-            postsArray.unshift(pinnedPost);
+    if (currentUser) {
+        const pinnedPostId = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
+        const pinnedId = pinnedPostId.val();
+        if (pinnedId) {
+            const pinnedIndex = postsArray.findIndex(p => p.id === pinnedId);
+            if (pinnedIndex > -1) {
+                const pinnedPost = postsArray[pinnedIndex];
+                postsArray.splice(pinnedIndex, 1);
+                postsArray.unshift(pinnedPost);
+            }
         }
     }
     
     // تخزين في الكاش
     allPostsCache = postsArray;
-    hasMorePosts = allPostsCache.length > POSTS_PER_BATCH;
-    currentDisplayCount = POSTS_PER_BATCH;
-    lastPostTimestamp = allPostsCache.length > 0 ? allPostsCache[allPostsCache.length - 1].timestamp : null;
+    hasMorePosts = allPostsCache.length > POSTS_PER_PAGE;
+    currentDisplayCount = POSTS_PER_PAGE;
     
-    // عرض الدفعة الأولى
-    await displayPosts(0, POSTS_PER_BATCH);
+    // عرض الدفعة الأولى فقط
+    feedContainer.innerHTML = '';
+    await displayPosts(0, POSTS_PER_PAGE);
     
     // إضافة مستمع التمرير
-    setupScrollListener();
+    if (!scrollListenerAdded) {
+        setupScrollListener();
+        scrollListenerAdded = true;
+    }
 }
 
-// دالة عرض المنشورات من الفهرس إلى الفهرس+العدد
+// دالة عرض المنشورات
 async function displayPosts(startIndex, count) {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
     
-    if (startIndex === 0) {
-        feedContainer.innerHTML = '';
-    }
-    
     const endIndex = Math.min(startIndex + count, allPostsCache.length);
     const postsToShow = allPostsCache.slice(startIndex, endIndex);
-    
-    let html = '';
     
     for (const post of postsToShow) {
         await incrementPostViews(post.id);
@@ -1048,9 +1036,12 @@ async function displayPosts(startIndex, count) {
         const isLiked = post.likes && post.likes[currentUser?.uid];
         const likesCount = post.likes ? Object.keys(post.likes).length : 0;
         const isOwner = post.userId === currentUser?.uid;
-        const pinnedPostId = await db.ref(`users/${currentUser?.uid}/pinnedPost`).once('value');
-        const isPinned = pinnedPostId.val() === post.id;
-        const savedSnapshot = await db.ref(`savedPosts/${currentUser?.uid}/${post.id}`).once('value');
+        let isPinned = false;
+        if (currentUser) {
+            const pinnedPostId = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
+            isPinned = pinnedPostId.val() === post.id;
+        }
+        const savedSnapshot = currentUser ? await db.ref(`savedPosts/${currentUser.uid}/${post.id}`).once('value') : { exists: () => false };
         const isSaved = savedSnapshot.exists();
         
         let formattedText = escapeHtml(post.text);
@@ -1111,7 +1102,7 @@ async function displayPosts(startIndex, count) {
             }
         }
         
-        html += `
+        const postHtml = `
             <div class="post-card ${isPinned ? 'pinned' : ''} fade-in" data-post-id="${post.id}" ondblclick="likePost('${post.id}'); createHeartAnimation(event.clientX, event.clientY)">
                 ${isPinned ? '<div class="pinned-badge"><i class="fas fa-thumbtack"></i> مثبت</div>' : ''}
                 <div class="post-header">
@@ -1147,11 +1138,11 @@ async function displayPosts(startIndex, count) {
                 <div class="post-views"><i class="far fa-eye"></i> ${post.views || 0} مشاهدة</div>
             </div>
         `;
+        
+        feedContainer.insertAdjacentHTML('beforeend', postHtml);
     }
     
-    feedContainer.innerHTML += html;
-    
-    // إضافة مؤشر تحميل في الأسفل إذا كان هناك المزيد
+    // إضافة مؤشر التحميل إذا كان هناك المزيد
     if (hasMorePosts && endIndex < allPostsCache.length) {
         let loadMoreDiv = document.getElementById('loadMoreTrigger');
         if (!loadMoreDiv) {
@@ -1172,22 +1163,21 @@ async function displayPosts(startIndex, count) {
     }
 }
 
-// دالة تحميل المزيد من المنشورات
+// دالة تحميل المزيد
 async function loadMorePosts() {
-    if (isLoadingMore || !hasMorePosts) return;
+    if (isLoadingPosts || !hasMorePosts) return;
     
-    isLoadingMore = true;
+    isLoadingPosts = true;
     const loadMoreDiv = document.getElementById('loadMoreTrigger');
     if (loadMoreDiv) loadMoreDiv.style.display = 'flex';
     
-    // محاكاة تأخير صغير للشعور بالسلاسة
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     const startIndex = currentDisplayCount;
-    const newEndIndex = Math.min(startIndex + POSTS_PER_BATCH, allPostsCache.length);
+    const newEndIndex = Math.min(startIndex + POSTS_PER_PAGE, allPostsCache.length);
     
     if (startIndex < allPostsCache.length) {
-        await displayPosts(startIndex, POSTS_PER_BATCH);
+        await displayPosts(startIndex, POSTS_PER_PAGE);
         currentDisplayCount = newEndIndex;
         hasMorePosts = currentDisplayCount < allPostsCache.length;
     } else {
@@ -1195,28 +1185,27 @@ async function loadMorePosts() {
     }
     
     if (loadMoreDiv) loadMoreDiv.style.display = 'none';
-    isLoadingMore = false;
+    isLoadingPosts = false;
 }
 
 // دالة إعداد مستمع التمرير
 function setupScrollListener() {
+    const handleScroll = () => {
+        if (isLoadingPosts || !hasMorePosts) return;
+        
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const threshold = document.body.offsetHeight - 400;
+        
+        if (scrollPosition >= threshold) {
+            loadMorePosts();
+        }
+    };
+    
     window.removeEventListener('scroll', handleScroll);
     window.addEventListener('scroll', handleScroll);
 }
 
-// دالة معالجة التمرير
-function handleScroll() {
-    if (isLoadingMore || !hasMorePosts) return;
-    
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const threshold = document.body.offsetHeight - 500; // 500px قبل النهاية
-    
-    if (scrollPosition >= threshold) {
-        loadMorePosts();
-    }
-}
-
-// دالة تحديث الكاش (بعد إضافة/حذف منشور)
+// دالة تحديث الكاش
 async function refreshFeedCache() {
     if (!currentUser) return;
     
@@ -1253,11 +1242,9 @@ async function refreshFeedCache() {
     }
     
     allPostsCache = postsArray;
-    hasMorePosts = allPostsCache.length > POSTS_PER_BATCH;
-    currentDisplayCount = Math.min(POSTS_PER_BATCH, allPostsCache.length);
-    lastPostTimestamp = allPostsCache.length > 0 ? allPostsCache[allPostsCache.length - 1].timestamp : null;
+    hasMorePosts = allPostsCache.length > POSTS_PER_PAGE;
+    currentDisplayCount = Math.min(POSTS_PER_PAGE, allPostsCache.length);
     
-    // إعادة عرض المنشورات
     const feedContainer = document.getElementById('feedContainer');
     if (feedContainer) {
         feedContainer.innerHTML = '';
@@ -1265,16 +1252,14 @@ async function refreshFeedCache() {
     }
 }
 
-// دالة إعادة تعيين الـ Infinite Scroll
 function resetInfiniteScroll() {
-    isLoadingMore = false;
+    isLoadingPosts = false;
     hasMorePosts = true;
-    lastPostTimestamp = null;
     allPostsCache = [];
     currentDisplayCount = 0;
 }
 
-// الدالة الرئيسية loadFeed (للتوافق مع الكود القديم)
+// الدالة الرئيسية loadFeed
 async function loadFeed() {
     await loadAllPostsToCache();
 }
@@ -1409,7 +1394,7 @@ async function openProfile(userId) {
     const profileAvatarLarge = document.getElementById('profileAvatarLarge');
     profileAvatarLarge.innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fas fa-user text-5xl text-white flex items-center justify-center h-full"></i>';
     document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fas fa-check-circle verified-badge" style="color: #0095f6; font-size: 20px;"></i>' : ''}`;
-    document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في VIBE ✨";
+    document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في المنصة ✨";
     const websiteEl = document.getElementById('profileWebsite');
     if (userData.website) websiteEl.innerHTML = `<a href="${userData.website}" target="_blank" style="color: #ff6b35;">${userData.website}</a>`;
     else websiteEl.innerHTML = '';
@@ -1675,7 +1660,25 @@ async function openAdminPanel() {
     if (currentUser.email !== ADMIN_EMAIL && !currentUser.isAdmin) return showToast('🚫 غير مصرح لك بالدخول إلى لوحة التحكم');
     showToast('🔧 جاري تحميل لوحة التحكم...');
     
-    await loadBadWordsReports();
+    // عرض الكلمات الممنوعة
+    const badWordsSnapshot = await db.ref('badWords').once('value');
+    const badWords = badWordsSnapshot.val();
+    const badWordsContainer = document.getElementById('adminBadWordsList');
+    if (badWordsContainer) {
+        if (!badWords) {
+            badWordsContainer.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد كلمات ممنوعة</div>';
+        } else {
+            let html = '<div style="max-height: 300px; overflow-y: auto;">';
+            for (const [id, word] of Object.entries(badWords)) {
+                html += `<div class="admin-item">
+                    <div><span style="font-weight: 600;">🚫 ${escapeHtml(word)}</span></div>
+                    <button class="admin-delete-btn" onclick="removeBadWord('${id}', '${word}')">حذف</button>
+                </div>`;
+            }
+            html += '</div>';
+            badWordsContainer.innerHTML = html;
+        }
+    }
     
     const usersSnapshot = await db.ref('users').once('value');
     const postsSnapshot = await db.ref('posts').once('value');
@@ -1707,6 +1710,14 @@ async function openAdminPanel() {
     }
     document.getElementById('adminPostsList').innerHTML = postsHtml || '<div class="text-center p-4 text-gray-500">لا توجد منشورات</div>';
     document.getElementById('adminPanel').classList.add('open');
+}
+
+// دالة إضافة كلمة ممنوعة من لوحة التحكم
+function showAddBadWordModal() {
+    const word = prompt('📝 أدخل الكلمة التي تريد منعها:');
+    if (word && word.trim()) {
+        addBadWord(word.trim());
+    }
 }
 
 async function verifyUser(userId) {
@@ -1921,7 +1932,7 @@ auth.onAuthStateChanged(async (user) => {
         } else {
             await db.ref(`users/${user.uid}`).set({
                 uid: user.uid, name: user.displayName || user.email.split('@')[0],
-                email: user.email, bio: "مرحباً! أنا في VIBE ✨", avatar: "", cover: "",
+                email: user.email, bio: "مرحباً! أنا في المنصة ✨", avatar: "", cover: "",
                 website: "", verified: false, isAdmin: user.email === ADMIN_EMAIL,
                 blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
             });
@@ -1944,13 +1955,13 @@ auth.onAuthStateChanged(async (user) => {
             document.getElementById('hideLikesToggle')?.classList.add('active');
         }
         
+        await loadBadWordsList();
         resetInfiniteScroll();
         await loadFeed();
         loadNotifications();
         loadTrendingHashtags();
         loadDndStatus();
         checkScheduledPosts();
-        if (currentUser.isAdmin) loadBadWordsReports();
     } else {
         document.getElementById('authScreen').style.display = 'flex';
         document.getElementById('mainApp').style.display = 'none';
