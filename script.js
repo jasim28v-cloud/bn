@@ -16,6 +16,14 @@ let hideLikesActive = false;
 let currentImageUrls = [];
 let currentImageIndex = 0;
 
+// ==================== متغيرات الـ Infinite Scroll ====================
+let isLoadingMore = false;
+let hasMorePosts = true;
+let lastPostTimestamp = null;
+let allPostsCache = []; // تخزين مؤقت للمنشورات المصنفة
+let currentDisplayCount = 10; // عدد المنشورات المعروضة حالياً
+const POSTS_PER_BATCH = 10; // عدد المنشورات لكل تحميل
+
 let agoraClient = null;
 let localTracks = { videoTrack: null, audioTrack: null };
 let isCallActive = false;
@@ -281,6 +289,7 @@ async function checkScheduledPosts() {
                 });
                 await db.ref(`scheduledPosts/${currentUser.uid}/${id}`).remove();
                 showToast('تم نشر المنشور المجدول');
+                await refreshFeedCache(); // تحديث الكاش بعد النشر المجدول
             }
         }
     }
@@ -323,7 +332,7 @@ function toggleHideLikes() {
         localStorage.setItem('hideLikes', 'false');
     }
     showToast(hideLikesActive ? 'تم إخفاء عدد الإعجابات' : 'تم إظهار عدد الإعجابات');
-    loadFeed();
+    refreshFeedCache();
 }
 
 function toggleTheme() {
@@ -489,12 +498,17 @@ async function login() {
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         showToast(`مرحباً ${currentUser.displayName || currentUser.name}!`);
-        loadFeed();
+        
+        // إعادة تعيين متغيرات الـ Infinite Scroll
+        resetInfiniteScroll();
+        
+        await loadFeed();
         loadNotifications();
         loadTrendingHashtags();
         loadDndStatus();
         checkScheduledPosts();
         loadBadWordsReports();
+        
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') document.body.classList.add('dark-mode');
         const savedReadMode = localStorage.getItem('readMode');
@@ -536,7 +550,9 @@ async function register() {
         currentUser.name = name;
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
-        loadFeed();
+        
+        resetInfiniteScroll();
+        await loadFeed();
         loadTrendingHashtags();
         showToast(`أهلاً بك ${name}!`);
     } catch (error) {
@@ -589,7 +605,7 @@ async function savePost(postId) {
         await saveRef.set(true);
         showToast('تم حفظ المنشور');
     }
-    loadFeed();
+    refreshFeedCache();
 }
 
 async function openSavedPosts() {
@@ -628,7 +644,7 @@ async function pinPost(postId) {
         await db.ref(`users/${currentUser.uid}/pinnedPost`).set(postId);
         showToast('تم تثبيت المنشور');
     }
-    loadFeed();
+    refreshFeedCache();
     if (currentProfileUser) loadProfilePosts(currentProfileUser);
 }
 
@@ -758,13 +774,13 @@ async function changeCover() {
 async function blockUser(userId) {
     await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).set(true);
     showToast('تم حظر المستخدم');
-    loadFeed();
+    refreshFeedCache();
 }
 
 async function unblockUser(userId) {
     await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).remove();
     showToast('تم إلغاء حظر المستخدم');
-    loadFeed();
+    refreshFeedCache();
 }
 
 async function isBlocked(userId) {
@@ -840,7 +856,8 @@ async function createPost() {
     selectedMediaFile = null;
     editingPostId = null;
     closeCompose();
-    loadFeed();
+    
+    await refreshFeedCache(); // تحديث الكاش بعد النشر
     loadTrendingHashtags();
     showToast('تم نشر المنشور بنجاح!');
 }
@@ -857,7 +874,7 @@ async function deletePost(postId) {
         }
     }
     await db.ref(`posts/${postId}`).remove();
-    loadFeed();
+    await refreshFeedCache();
     loadTrendingHashtags();
     showToast('تم حذف المنشور');
 }
@@ -913,6 +930,7 @@ async function sharePost(postId) {
         userAvatar: currentUser.avatar || "", text: `شارك منشور: ${post.text.substring(0, 100)}`,
         originalPostId: postId, originalUser: post.userName, timestamp: Date.now()
     });
+    await refreshFeedCache();
     showToast('تمت المشاركة!');
 }
 
@@ -924,7 +942,7 @@ async function votePoll(postId, optionIndex) {
     if (poll && poll.votes && poll.votes[currentUser.uid]) return showToast('لقد صوت مسبقاً');
     await db.ref(`posts/${postId}/poll/votes/${currentUser.uid}`).set(optionIndex);
     await db.ref(`posts/${postId}/poll/totalVotes`).transaction(current => (current || 0) + 1);
-    loadFeed();
+    refreshFeedCache();
 }
 
 // ==================== زيادة المشاهدات ====================
@@ -955,31 +973,35 @@ async function loadTrendingHashtags() {
     }
 }
 
-// ==================== التغذية - جميع المنشورات بدون limit ====================
-async function loadFeed() {
+// ==================== التغذية - مع Infinite Scroll ====================
+
+// دالة لجلب وتخزين جميع المنشورات في الكاش (مرة واحدة فقط)
+async function loadAllPostsToCache() {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
     
-    feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري تحميل جميع المنشورات...</span></div>';
+    feedContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>جاري التحميل...</span></div>';
     
-    // ✅ تمت إزالة limitToLast(10) - الآن يجلب جميع المنشورات
     const snapshot = await db.ref('posts').once('value');
     const posts = snapshot.val();
     
     if (!posts || Object.keys(posts).length === 0) {
         feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">لا توجد منشورات بعد</div>';
+        hasMorePosts = false;
         return;
     }
     
+    // تحويل المنشورات إلى مصفوفة وترتيبها تنازلياً
     let postsArray = Object.values(posts).sort((a, b) => b.timestamp - a.timestamp);
     
+    // فلترة المحظورين
     const blockedSnapshot = await db.ref(`users/${currentUser?.uid}/blockedUsers`).once('value');
     const blockedUsers = blockedSnapshot.val() || {};
+    postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
     
+    // معالجة المنشور المثبت
     const pinnedPostId = await db.ref(`users/${currentUser?.uid}/pinnedPost`).once('value');
     const pinnedId = pinnedPostId.val();
-    
-    postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
     
     if (pinnedId) {
         const pinnedIndex = postsArray.findIndex(p => p.id === pinnedId);
@@ -990,9 +1012,34 @@ async function loadFeed() {
         }
     }
     
+    // تخزين في الكاش
+    allPostsCache = postsArray;
+    hasMorePosts = allPostsCache.length > POSTS_PER_BATCH;
+    currentDisplayCount = POSTS_PER_BATCH;
+    lastPostTimestamp = allPostsCache.length > 0 ? allPostsCache[allPostsCache.length - 1].timestamp : null;
+    
+    // عرض الدفعة الأولى
+    await displayPosts(0, POSTS_PER_BATCH);
+    
+    // إضافة مستمع التمرير
+    setupScrollListener();
+}
+
+// دالة عرض المنشورات من الفهرس إلى الفهرس+العدد
+async function displayPosts(startIndex, count) {
+    const feedContainer = document.getElementById('feedContainer');
+    if (!feedContainer) return;
+    
+    if (startIndex === 0) {
+        feedContainer.innerHTML = '';
+    }
+    
+    const endIndex = Math.min(startIndex + count, allPostsCache.length);
+    const postsToShow = allPostsCache.slice(startIndex, endIndex);
+    
     let html = '';
     
-    for (const post of postsArray) {
+    for (const post of postsToShow) {
         await incrementPostViews(post.id);
         
         const userInfoSnapshot = await db.ref(`users/${post.userId}`).once('value');
@@ -1001,7 +1048,8 @@ async function loadFeed() {
         const isLiked = post.likes && post.likes[currentUser?.uid];
         const likesCount = post.likes ? Object.keys(post.likes).length : 0;
         const isOwner = post.userId === currentUser?.uid;
-        const isPinned = pinnedId === post.id;
+        const pinnedPostId = await db.ref(`users/${currentUser?.uid}/pinnedPost`).once('value');
+        const isPinned = pinnedPostId.val() === post.id;
         const savedSnapshot = await db.ref(`savedPosts/${currentUser?.uid}/${post.id}`).once('value');
         const isSaved = savedSnapshot.exists();
         
@@ -1101,8 +1149,134 @@ async function loadFeed() {
         `;
     }
     
-    feedContainer.innerHTML = html;
-    console.log(`✅ تم تحميل ${postsArray.length} منشور (جميع المنشورات بدون حد أقصى)`);
+    feedContainer.innerHTML += html;
+    
+    // إضافة مؤشر تحميل في الأسفل إذا كان هناك المزيد
+    if (hasMorePosts && endIndex < allPostsCache.length) {
+        let loadMoreDiv = document.getElementById('loadMoreTrigger');
+        if (!loadMoreDiv) {
+            loadMoreDiv = document.createElement('div');
+            loadMoreDiv.id = 'loadMoreTrigger';
+            loadMoreDiv.className = 'load-more-btn';
+            loadMoreDiv.innerHTML = '<div class="spinner" style="width: 24px; height: 24px;"></div><span>جاري تحميل المزيد...</span>';
+            loadMoreDiv.style.display = 'none';
+            feedContainer.appendChild(loadMoreDiv);
+        }
+    } else if (allPostsCache.length > 0 && endIndex >= allPostsCache.length) {
+        const loadMoreDiv = document.getElementById('loadMoreTrigger');
+        if (loadMoreDiv) loadMoreDiv.remove();
+        const endMessage = document.createElement('div');
+        endMessage.className = 'text-center p-4 text-gray-500';
+        endMessage.innerHTML = '✨ لقد وصلت إلى النهاية ✨';
+        feedContainer.appendChild(endMessage);
+    }
+}
+
+// دالة تحميل المزيد من المنشورات
+async function loadMorePosts() {
+    if (isLoadingMore || !hasMorePosts) return;
+    
+    isLoadingMore = true;
+    const loadMoreDiv = document.getElementById('loadMoreTrigger');
+    if (loadMoreDiv) loadMoreDiv.style.display = 'flex';
+    
+    // محاكاة تأخير صغير للشعور بالسلاسة
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const startIndex = currentDisplayCount;
+    const newEndIndex = Math.min(startIndex + POSTS_PER_BATCH, allPostsCache.length);
+    
+    if (startIndex < allPostsCache.length) {
+        await displayPosts(startIndex, POSTS_PER_BATCH);
+        currentDisplayCount = newEndIndex;
+        hasMorePosts = currentDisplayCount < allPostsCache.length;
+    } else {
+        hasMorePosts = false;
+    }
+    
+    if (loadMoreDiv) loadMoreDiv.style.display = 'none';
+    isLoadingMore = false;
+}
+
+// دالة إعداد مستمع التمرير
+function setupScrollListener() {
+    window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll);
+}
+
+// دالة معالجة التمرير
+function handleScroll() {
+    if (isLoadingMore || !hasMorePosts) return;
+    
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 500; // 500px قبل النهاية
+    
+    if (scrollPosition >= threshold) {
+        loadMorePosts();
+    }
+}
+
+// دالة تحديث الكاش (بعد إضافة/حذف منشور)
+async function refreshFeedCache() {
+    if (!currentUser) return;
+    
+    const snapshot = await db.ref('posts').once('value');
+    const posts = snapshot.val();
+    
+    if (!posts || Object.keys(posts).length === 0) {
+        allPostsCache = [];
+        hasMorePosts = false;
+        currentDisplayCount = 0;
+        const feedContainer = document.getElementById('feedContainer');
+        if (feedContainer) {
+            feedContainer.innerHTML = '<div class="text-center p-8 text-gray-500">لا توجد منشورات بعد</div>';
+        }
+        return;
+    }
+    
+    let postsArray = Object.values(posts).sort((a, b) => b.timestamp - a.timestamp);
+    
+    const blockedSnapshot = await db.ref(`users/${currentUser.uid}/blockedUsers`).once('value');
+    const blockedUsers = blockedSnapshot.val() || {};
+    postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
+    
+    const pinnedPostId = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
+    const pinnedId = pinnedPostId.val();
+    
+    if (pinnedId) {
+        const pinnedIndex = postsArray.findIndex(p => p.id === pinnedId);
+        if (pinnedIndex > -1) {
+            const pinnedPost = postsArray[pinnedIndex];
+            postsArray.splice(pinnedIndex, 1);
+            postsArray.unshift(pinnedPost);
+        }
+    }
+    
+    allPostsCache = postsArray;
+    hasMorePosts = allPostsCache.length > POSTS_PER_BATCH;
+    currentDisplayCount = Math.min(POSTS_PER_BATCH, allPostsCache.length);
+    lastPostTimestamp = allPostsCache.length > 0 ? allPostsCache[allPostsCache.length - 1].timestamp : null;
+    
+    // إعادة عرض المنشورات
+    const feedContainer = document.getElementById('feedContainer');
+    if (feedContainer) {
+        feedContainer.innerHTML = '';
+        await displayPosts(0, currentDisplayCount);
+    }
+}
+
+// دالة إعادة تعيين الـ Infinite Scroll
+function resetInfiniteScroll() {
+    isLoadingMore = false;
+    hasMorePosts = true;
+    lastPostTimestamp = null;
+    allPostsCache = [];
+    currentDisplayCount = 0;
+}
+
+// الدالة الرئيسية loadFeed (للتوافق مع الكود القديم)
+async function loadFeed() {
+    await loadAllPostsToCache();
 }
 
 // ==================== البحث ====================
@@ -1207,7 +1381,7 @@ async function addComment() {
     }
     document.getElementById('commentInput').value = '';
     await loadComments(currentPostId);
-    loadFeed();
+    refreshFeedCache();
     showToast('تم إضافة التعليق');
 }
 
@@ -1546,7 +1720,7 @@ async function verifyUser(userId) {
     }
     openAdminPanel();
     if (currentProfileUser === userId) openProfile(userId);
-    loadFeed();
+    refreshFeedCache();
 }
 
 async function deleteUser(userId) {
@@ -1554,7 +1728,7 @@ async function deleteUser(userId) {
         await db.ref(`users/${userId}`).remove();
         showToast('🗑️ تم حذف المستخدم');
         openAdminPanel();
-        loadFeed();
+        refreshFeedCache();
     }
 }
 
@@ -1691,12 +1865,12 @@ function openSearch() {
 }
 
 function goToHome() {
-    loadFeed();
+    refreshFeedCache();
 }
 
 function switchTab(tab) {
     if (tab === 'home') {
-        loadFeed();
+        refreshFeedCache();
     }
 }
 
@@ -1770,7 +1944,8 @@ auth.onAuthStateChanged(async (user) => {
             document.getElementById('hideLikesToggle')?.classList.add('active');
         }
         
-        loadFeed();
+        resetInfiniteScroll();
+        await loadFeed();
         loadNotifications();
         loadTrendingHashtags();
         loadDndStatus();
