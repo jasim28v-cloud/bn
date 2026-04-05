@@ -29,6 +29,10 @@
             max-width: 420px;
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
         }
+        body.dark-mode .card {
+            background: #000;
+            border: 1px solid #333;
+        }
         .card h1 {
             font-size: 42px;
             font-weight: 800;
@@ -46,6 +50,9 @@
             border-radius: 60px;
             padding: 4px;
         }
+        body.dark-mode .tabs {
+            background: #1a1a1a;
+        }
         .tab {
             flex: 1;
             padding: 12px;
@@ -56,6 +63,9 @@
             font-weight: 600;
             cursor: pointer;
             color: #666;
+        }
+        body.dark-mode .tab {
+            color: #aaa;
         }
         .tab.active {
             background: linear-gradient(135deg, #ff6b35, #f7b733);
@@ -76,6 +86,11 @@
             font-size: 15px;
             font-family: inherit;
             outline: none;
+        }
+        body.dark-mode input {
+            background: #1a1a1a;
+            border-color: #333;
+            color: white;
         }
         input:focus {
             border-color: #ff6b35;
@@ -124,9 +139,24 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .theme-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+
+<button class="theme-btn" onclick="toggleTheme()"><i class="fas fa-moon"></i></button>
 
 <div class="card">
     <h1>✨ VIBE ✨</h1>
@@ -163,12 +193,33 @@
 
 <script src="firebase-config.js"></script>
 <script>
-    // Wait for Firebase to load
-    let authInitialized = false;
+    // Theme Toggle
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        const btn = document.querySelector('.theme-btn i');
+        if (isDark) {
+            btn.classList.remove('fa-moon');
+            btn.classList.add('fa-sun');
+        } else {
+            btn.classList.remove('fa-sun');
+            btn.classList.add('fa-moon');
+        }
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
+    
+    // Load saved theme
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.querySelector('.theme-btn i').classList.remove('fa-moon');
+        document.querySelector('.theme-btn i').classList.add('fa-sun');
+    }
     
     function showForm(type) {
-        document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+        document.getElementById('loginForm').classList.remove('active');
+        document.getElementById('registerForm').classList.remove('active');
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        
         if (type === 'login') {
             document.getElementById('loginForm').classList.add('active');
             document.querySelectorAll('.tab')[0].classList.add('active');
@@ -176,10 +227,6 @@
             document.getElementById('registerForm').classList.add('active');
             document.querySelectorAll('.tab')[1].classList.add('active');
         }
-        clearErrors();
-    }
-    
-    function clearErrors() {
         document.getElementById('loginError').innerHTML = '';
         document.getElementById('registerError').innerHTML = '';
     }
@@ -195,7 +242,15 @@
         }
     }
     
-    // Login
+    // Wait for Firebase to be ready
+    setTimeout(() => {
+        if (typeof auth === 'undefined') {
+            console.error('Firebase auth not loaded!');
+            document.getElementById('loginError').innerHTML = '⚠️ خطأ في الاتصال، تأكد من اتصال الإنترنت';
+        }
+    }, 1000);
+    
+    // LOGIN
     document.getElementById('loginBtn').addEventListener('click', async () => {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
@@ -209,20 +264,22 @@
         
         try {
             const result = await auth.signInWithEmailAndPassword(email, password);
-            console.log('Login success:', result.user.email);
+            console.log('✅ Login success:', result.user.email);
             window.location.href = 'index.html';
         } catch (error) {
+            console.error('Login error:', error.code, error.message);
             let msg = '';
             if (error.code === 'auth/user-not-found') msg = '❌ لا يوجد حساب بهذا البريد';
             else if (error.code === 'auth/wrong-password') msg = '❌ كلمة المرور غير صحيحة';
             else if (error.code === 'auth/invalid-email') msg = '❌ البريد الإلكتروني غير صالح';
+            else if (error.code === 'auth/too-many-requests') msg = '❌ تم تعطيل الحساب مؤقتاً';
             else msg = '❌ ' + error.message;
             document.getElementById('loginError').innerHTML = msg;
             setLoading('loginBtn', false, 'تسجيل الدخول');
         }
     });
     
-    // Register
+    // REGISTER
     document.getElementById('registerBtn').addEventListener('click', async () => {
         const name = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
@@ -262,8 +319,10 @@
                 createdAt: Date.now()
             });
             
+            console.log('✅ Register success:', email);
             window.location.href = 'index.html';
         } catch (error) {
+            console.error('Register error:', error.code, error.message);
             let msg = '';
             if (error.code === 'auth/email-already-in-use') msg = '❌ البريد الإلكتروني مستخدم بالفعل';
             else if (error.code === 'auth/invalid-email') msg = '❌ البريد الإلكتروني غير صالح';
@@ -274,7 +333,7 @@
         }
     });
     
-    // Check if already logged in
+    // Auto redirect if already logged in
     auth.onAuthStateChanged((user) => {
         if (user) {
             window.location.href = 'index.html';
