@@ -29,7 +29,7 @@ let agoraClient = null;
 let localTracks = { videoTrack: null, audioTrack: null };
 let isCallActive = false;
 
-let badWordsList = []; // تبدأ فارغة - المدير يضيفها
+let badWordsList = [];
 
 // ==================== دوال مساعدة ====================
 function showToast(message, duration = 2000) {
@@ -481,110 +481,17 @@ async function startVideoCallWithUser(userId) {
     });
 }
 
-// ==================== تسجيل الخروج ====================
+// ==================== تسجيل الخروج (معدل - توجيه إلى auth.html) ====================
 async function logout() {
     try {
         await auth.signOut();
+        localStorage.removeItem('auth_logged_in');
         showToast('تم تسجيل الخروج بنجاح');
-        setTimeout(() => location.reload(), 1000);
+        setTimeout(() => {
+            window.location.href = 'auth.html';
+        }, 1000);
     } catch (error) {
         showToast('حدث خطأ أثناء تسجيل الخروج');
-    }
-}
-
-// ==================== تسجيل الدخول والتسجيل ====================
-function switchAuth(form) {
-    document.getElementById('loginForm').classList.remove('active');
-    document.getElementById('registerForm').classList.remove('active');
-    document.getElementById(`${form}Form`).classList.add('active');
-}
-
-async function login() {
-    const email = document.getElementById('loginEmail')?.value;
-    const password = document.getElementById('loginPassword')?.value;
-    const msgDiv = document.getElementById('loginMsg');
-    if (!email || !password) return msgDiv.textContent = 'الرجاء إدخال البريد وكلمة المرور';
-    try {
-        showToast('جاري تسجيل الدخول...');
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        currentUser = userCredential.user;
-        const snapshot = await db.ref(`users/${currentUser.uid}`).once('value');
-        if (snapshot.exists()) {
-            currentUser = { ...currentUser, ...snapshot.val() };
-        } else {
-            await db.ref(`users/${currentUser.uid}`).set({
-                uid: currentUser.uid, name: currentUser.displayName || email.split('@')[0],
-                email: email, bio: "مرحباً! أنا في المنصة ✨", avatar: "", cover: "",
-                website: "", verified: false, isAdmin: false, blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
-            });
-        }
-        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-            showToast('🌟 مرحباً بك في لوحة التحكم يا مدير!');
-            await db.ref(`users/${currentUser.uid}`).update({ isAdmin: true, verified: true, name: 'Admin' });
-            currentUser.isAdmin = true;
-            currentUser.verified = true;
-        }
-        document.getElementById('authScreen').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        showToast(`مرحباً ${currentUser.displayName || currentUser.name}!`);
-        
-        resetInfiniteScroll();
-        await loadFeed();
-        loadNotifications();
-        loadTrendingHashtags();
-        loadDndStatus();
-        checkScheduledPosts();
-        await loadBadWordsList();
-        
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') document.body.classList.add('dark-mode');
-        const savedReadMode = localStorage.getItem('readMode');
-        if (savedReadMode === 'true') {
-            readModeActive = true;
-            document.getElementById('readModeToggle')?.classList.add('active');
-            document.body.classList.add('read-mode');
-        }
-        const savedHideLikes = localStorage.getItem('hideLikes');
-        if (savedHideLikes === 'true') {
-            hideLikesActive = true;
-            document.getElementById('hideLikesToggle')?.classList.add('active');
-        }
-        await recordProfileView(currentUser.uid);
-    } catch (error) {
-        if (msgDiv) msgDiv.textContent = error.message;
-        showToast(error.message);
-    }
-}
-
-async function register() {
-    const name = document.getElementById('regName')?.value;
-    const email = document.getElementById('regEmail')?.value;
-    const password = document.getElementById('regPass')?.value;
-    const confirmPass = document.getElementById('regConfirmPass')?.value;
-    const msgDiv = document.getElementById('regMsg');
-    if (!name || !email || !password) return msgDiv.textContent = 'الرجاء ملء جميع الحقول';
-    if (password !== confirmPass) return msgDiv.textContent = 'كلمة المرور غير متطابقة';
-    try {
-        showToast('جاري إنشاء الحساب...');
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        await userCredential.user.updateProfile({ displayName: name });
-        await db.ref(`users/${userCredential.user.uid}`).set({
-            uid: userCredential.user.uid, name: name, email: email,
-            bio: "مرحباً! أنا في المنصة ✨", avatar: "", cover: "", website: "",
-            verified: false, isAdmin: email === ADMIN_EMAIL, blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
-        });
-        currentUser = userCredential.user;
-        currentUser.name = name;
-        document.getElementById('authScreen').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        
-        resetInfiniteScroll();
-        await loadFeed();
-        loadTrendingHashtags();
-        showToast(`أهلاً بك ${name}!`);
-    } catch (error) {
-        if (msgDiv) msgDiv.textContent = error.message;
-        showToast(error.message);
     }
 }
 
@@ -963,7 +870,6 @@ async function loadTrendingHashtags() {
 
 // ==================== Infinite Scroll - التحميل المتدرج ====================
 
-// دالة تحميل كل المنشورات إلى الكاش (مرة واحدة)
 async function loadAllPostsToCache() {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
@@ -979,17 +885,14 @@ async function loadAllPostsToCache() {
         return;
     }
     
-    // تحويل المنشورات إلى مصفوفة وترتيبها
     let postsArray = Object.values(posts).sort((a, b) => b.timestamp - a.timestamp);
     
-    // فلترة المحظورين
     if (currentUser) {
         const blockedSnapshot = await db.ref(`users/${currentUser.uid}/blockedUsers`).once('value');
         const blockedUsers = blockedSnapshot.val() || {};
         postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
     }
     
-    // معالجة المنشور المثبت
     if (currentUser) {
         const pinnedPostId = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
         const pinnedId = pinnedPostId.val();
@@ -1003,23 +906,19 @@ async function loadAllPostsToCache() {
         }
     }
     
-    // تخزين في الكاش
     allPostsCache = postsArray;
     hasMorePosts = allPostsCache.length > POSTS_PER_PAGE;
     currentDisplayCount = POSTS_PER_PAGE;
     
-    // عرض الدفعة الأولى فقط
     feedContainer.innerHTML = '';
     await displayPosts(0, POSTS_PER_PAGE);
     
-    // إضافة مستمع التمرير
     if (!scrollListenerAdded) {
         setupScrollListener();
         scrollListenerAdded = true;
     }
 }
 
-// دالة عرض المنشورات
 async function displayPosts(startIndex, count) {
     const feedContainer = document.getElementById('feedContainer');
     if (!feedContainer) return;
@@ -1111,7 +1010,7 @@ async function displayPosts(startIndex, count) {
                         <div>
                             <div class="post-username">
                                 ${escapeHtml(post.userName)}
-                                ${isUserVerified ? '<i class="fas fa-check-circle verified-badge" style="color: #0095f6; font-size: 14px;"></i>' : ''}
+                                ${isUserVerified ? '<i class="fas fa-check-circle verified-badge" style="color: #FFD700 !important; font-size: 14px;"></i>' : ''}
                             </div>
                             <div class="post-time">${formatTime(post.timestamp)} ${post.edited ? '· معدل' : ''}</div>
                         </div>
@@ -1142,7 +1041,6 @@ async function displayPosts(startIndex, count) {
         feedContainer.insertAdjacentHTML('beforeend', postHtml);
     }
     
-    // إضافة مؤشر التحميل إذا كان هناك المزيد
     if (hasMorePosts && endIndex < allPostsCache.length) {
         let loadMoreDiv = document.getElementById('loadMoreTrigger');
         if (!loadMoreDiv) {
@@ -1163,7 +1061,6 @@ async function displayPosts(startIndex, count) {
     }
 }
 
-// دالة تحميل المزيد
 async function loadMorePosts() {
     if (isLoadingPosts || !hasMorePosts) return;
     
@@ -1188,7 +1085,6 @@ async function loadMorePosts() {
     isLoadingPosts = false;
 }
 
-// دالة إعداد مستمع التمرير
 function setupScrollListener() {
     const handleScroll = () => {
         if (isLoadingPosts || !hasMorePosts) return;
@@ -1205,7 +1101,6 @@ function setupScrollListener() {
     window.addEventListener('scroll', handleScroll);
 }
 
-// دالة تحديث الكاش
 async function refreshFeedCache() {
     if (!currentUser) return;
     
@@ -1259,7 +1154,6 @@ function resetInfiniteScroll() {
     currentDisplayCount = 0;
 }
 
-// الدالة الرئيسية loadFeed
 async function loadFeed() {
     await loadAllPostsToCache();
 }
@@ -1338,7 +1232,7 @@ async function loadComments(postId) {
         const userData = userSnapshot.val();
         const isCommentOwner = comment.userId === currentUser?.uid;
         const isVerified = userData?.verified || false;
-        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${isVerified ? '<i class="fas fa-check-circle" style="color: #0095f6; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; color: #8e8e8e;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: #ff6b35; color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fas fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
+        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${isVerified ? '<i class="fas fa-check-circle" style="color: #FFD700; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; color: #8e8e8e;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: #ff6b35; color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}${isCommentOwner ? `<button class="post-menu" onclick="pinComment('${postId}', '${comment.id}')" style="margin-right: auto;"><i class="fas fa-thumbtack"></i></button>` : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
     }
     commentsList.innerHTML = html;
 }
@@ -1393,7 +1287,7 @@ async function openProfile(userId) {
     }
     const profileAvatarLarge = document.getElementById('profileAvatarLarge');
     profileAvatarLarge.innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fas fa-user text-5xl text-white flex items-center justify-center h-full"></i>';
-    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fas fa-check-circle verified-badge" style="color: #0095f6; font-size: 20px;"></i>' : ''}`;
+    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fas fa-check-circle verified-badge" style="color: #FFD700; font-size: 20px;"></i>' : ''}`;
     document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في المنصة ✨";
     const websiteEl = document.getElementById('profileWebsite');
     if (userData.website) websiteEl.innerHTML = `<a href="${userData.website}" target="_blank" style="color: #ff6b35;">${userData.website}</a>`;
@@ -1655,7 +1549,7 @@ async function markNotificationRead(notifId) {
     loadNotifications();
 }
 
-// ==================== لوحة التحكم ====================
+// ==================== لوحة التحكم المحسنة ====================
 async function openAdminPanel() {
     if (currentUser.email !== ADMIN_EMAIL && !currentUser.isAdmin) return showToast('🚫 غير مصرح لك بالدخول إلى لوحة التحكم');
     showToast('🔧 جاري تحميل لوحة التحكم...');
@@ -1668,14 +1562,16 @@ async function openAdminPanel() {
         if (!badWords) {
             badWordsContainer.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد كلمات ممنوعة</div>';
         } else {
-            let html = '<div style="max-height: 300px; overflow-y: auto;">';
+            let html = '';
             for (const [id, word] of Object.entries(badWords)) {
                 html += `<div class="admin-item">
-                    <div><span style="font-weight: 600;">🚫 ${escapeHtml(word)}</span></div>
+                    <div class="admin-item-info">
+                        <div class="admin-item-avatar"><i class="fas fa-ban" style="color: #ff6b35;"></i></div>
+                        <div><div class="admin-item-name">🚫 ${escapeHtml(word)}</div></div>
+                    </div>
                     <button class="admin-delete-btn" onclick="removeBadWord('${id}', '${word}')">حذف</button>
                 </div>`;
             }
-            html += '</div>';
             badWordsContainer.innerHTML = html;
         }
     }
@@ -1687,16 +1583,32 @@ async function openAdminPanel() {
     const postsCount = postsSnapshot.exists() ? Object.keys(postsSnapshot.val()).length : 0;
     let commentsCount = 0;
     if (commentsSnapshot.exists()) for (const pc of Object.values(commentsSnapshot.val())) commentsCount += Object.keys(pc).length;
+    const verifiedCount = usersSnapshot.exists() ? Object.values(usersSnapshot.val()).filter(u => u.verified).length : 0;
+    
     document.getElementById('adminUsersCount').textContent = usersCount;
     document.getElementById('adminPostsCount').textContent = postsCount;
     document.getElementById('adminCommentsCount').textContent = commentsCount;
+    document.getElementById('adminVerifiedCount').textContent = verifiedCount;
     
     let usersHtml = '';
     if (usersSnapshot.exists()) {
         for (const [uid, user] of Object.entries(usersSnapshot.val())) {
             if (uid !== currentUser.uid) {
                 const isMuted = await isUserMuted(uid);
-                usersHtml += `<div class="admin-item"><div><div class="admin-item-name">${escapeHtml(user.name)}</div><div class="admin-item-email">${escapeHtml(user.email)}</div></div><div>${!user.verified ? `<button class="admin-verify-btn" onclick="verifyUser('${uid}')">✅ توثيق</button>` : '<span class="text-green-500">✅ موثق</span>'}<button class="admin-mute-btn" onclick="muteUser('${uid}', 60)">🔇 تقييد</button><button class="admin-delete-btn" onclick="deleteUser('${uid}')">🗑️ حذف</button></div></div>`;
+                usersHtml += `<div class="admin-item">
+                    <div class="admin-item-info">
+                        <div class="admin-item-avatar">${user.avatar ? `<img src="${user.avatar}">` : '<i class="fas fa-user"></i>'}</div>
+                        <div>
+                            <div class="admin-item-name">${escapeHtml(user.name)} ${user.verified ? '<i class="fas fa-check-circle" style="color: #FFD700;"></i>' : ''}</div>
+                            <div class="admin-item-email">${escapeHtml(user.email)}</div>
+                        </div>
+                    </div>
+                    <div>
+                        ${!user.verified ? `<button class="admin-verify-btn" onclick="verifyUser('${uid}')"><i class="fas fa-check-circle"></i> توثيق</button>` : '<span class="badge-gold"><i class="fas fa-star"></i> موثق</span>'}
+                        <button class="admin-mute-btn" onclick="muteUser('${uid}', 60)"><i class="fas fa-clock"></i> تقييد</button>
+                        <button class="admin-delete-btn" onclick="deleteUser('${uid}')"><i class="fas fa-trash"></i> حذف</button>
+                    </div>
+                </div>`;
             }
         }
     }
@@ -1705,14 +1617,22 @@ async function openAdminPanel() {
     let postsHtml = '';
     if (postsSnapshot.exists()) {
         for (const post of Object.values(postsSnapshot.val()).sort((a, b) => b.timestamp - a.timestamp).slice(0, 20)) {
-            postsHtml += `<div class="admin-item"><div><div class="admin-item-name">${escapeHtml(post.userName)}</div><div class="admin-item-email">${escapeHtml(post.text?.substring(0, 50) || '')}</div></div><button class="admin-delete-btn" onclick="deletePost('${post.id}')">🗑️ حذف</button></div>`;
+            postsHtml += `<div class="admin-item">
+                <div class="admin-item-info">
+                    <div class="admin-item-avatar"><i class="fas fa-newspaper"></i></div>
+                    <div>
+                        <div class="admin-item-name">${escapeHtml(post.userName)}</div>
+                        <div class="admin-item-email">${escapeHtml(post.text?.substring(0, 50) || '')}</div>
+                    </div>
+                </div>
+                <button class="admin-delete-btn" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> حذف</button>
+            </div>`;
         }
     }
     document.getElementById('adminPostsList').innerHTML = postsHtml || '<div class="text-center p-4 text-gray-500">لا توجد منشورات</div>';
     document.getElementById('adminPanel').classList.add('open');
 }
 
-// دالة إضافة كلمة ممنوعة من لوحة التحكم
 function showAddBadWordModal() {
     const word = prompt('📝 أدخل الكلمة التي تريد منعها:');
     if (word && word.trim()) {
@@ -1911,7 +1831,7 @@ setInterval(async () => {
     if (currentUser) await db.ref(`users/${currentUser.uid}/lastSeen`).set(Date.now());
 }, 60000);
 
-// ==================== مراقبة حالة المصادقة ====================
+// ==================== مراقبة حالة المصادقة (معدل - توجيه إلى auth.html) ====================
 const initLoader = document.getElementById('initLoader');
 
 auth.onAuthStateChanged(async (user) => {
@@ -1938,7 +1858,6 @@ auth.onAuthStateChanged(async (user) => {
             });
             currentUser.isAdmin = user.email === ADMIN_EMAIL;
         }
-        document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         
         const savedTheme = localStorage.getItem('theme');
@@ -1963,7 +1882,6 @@ auth.onAuthStateChanged(async (user) => {
         loadDndStatus();
         checkScheduledPosts();
     } else {
-        document.getElementById('authScreen').style.display = 'flex';
-        document.getElementById('mainApp').style.display = 'none';
+        window.location.href = 'auth.html';
     }
 });
