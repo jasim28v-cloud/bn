@@ -39,6 +39,11 @@
             animation: fadeInUp 0.5s ease;
         }
         
+        body.dark-mode .auth-card {
+            background: #000000;
+            border: 1px solid #2f3336;
+        }
+        
         .auth-card h1 {
             font-size: 48px;
             font-weight: 800;
@@ -64,6 +69,12 @@
         .auth-card input:focus {
             border-color: #ff6b35;
             box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+        
+        body.dark-mode .auth-card input {
+            background: #1a1a1a;
+            border-color: #2f3336;
+            color: white;
         }
         
         .auth-card button {
@@ -113,7 +124,7 @@
             cursor: pointer;
         }
         
-        .loading {
+        .loading-spinner {
             display: inline-block;
             width: 18px;
             height: 18px;
@@ -133,9 +144,28 @@
             opacity: 0.7;
             cursor: not-allowed;
         }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
+
+<button class="theme-toggle" onclick="toggleTheme()">
+    <i class="fas fa-moon"></i>
+</button>
 
 <div class="auth-card">
     <h1>VIBE</h1>
@@ -173,8 +203,33 @@
 <script>
     // ==================== VIBE Auth Page ====================
     
+    // Theme Toggle
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        const btn = document.querySelector('.theme-toggle i');
+        if (isDark) {
+            btn.classList.remove('fa-moon');
+            btn.classList.add('fa-sun');
+        } else {
+            btn.classList.remove('fa-sun');
+            btn.classList.add('fa-moon');
+        }
+        localStorage.setItem('authTheme', isDark ? 'dark' : 'light');
+    }
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('authTheme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const btn = document.querySelector('.theme-toggle i');
+        btn.classList.remove('fa-moon');
+        btn.classList.add('fa-sun');
+    }
+    
     function switchAuth(type) {
-        document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+        document.getElementById('loginForm').classList.remove('active');
+        document.getElementById('registerForm').classList.remove('active');
         document.getElementById(type + 'Form').classList.add('active');
         clearErrors();
     }
@@ -195,7 +250,7 @@
     function setLoading(btnId, isLoading, originalText) {
         const btn = document.getElementById(btnId);
         if (isLoading) {
-            btn.innerHTML = '<span class="loading"></span> جاري...';
+            btn.innerHTML = '<span class="loading-spinner"></span> جاري...';
             btn.classList.add('btn-loading');
             btn.disabled = true;
         } else {
