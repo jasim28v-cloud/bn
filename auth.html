@@ -6,12 +6,9 @@
     <title>تسجيل الدخول | VIBE</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -32,10 +29,6 @@
             max-width: 420px;
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
         }
-        body.dark-mode .card {
-            background: #000;
-            border: 1px solid #333;
-        }
         .card h1 {
             font-size: 42px;
             font-weight: 800;
@@ -53,7 +46,6 @@
             border-radius: 60px;
             padding: 4px;
         }
-        body.dark-mode .tabs { background: #1a1a1a; }
         .tab {
             flex: 1;
             padding: 12px;
@@ -65,7 +57,6 @@
             cursor: pointer;
             color: #666;
         }
-        body.dark-mode .tab { color: #aaa; }
         .tab.active {
             background: linear-gradient(135deg, #ff6b35, #f7b733);
             color: white;
@@ -81,11 +72,6 @@
             font-size: 15px;
             font-family: inherit;
             outline: none;
-        }
-        body.dark-mode input {
-            background: #1a1a1a;
-            border-color: #333;
-            color: white;
         }
         input:focus { border-color: #ff6b35; }
         button {
@@ -142,18 +128,14 @@
         <button class="tab" id="tabRegisterBtn">إنشاء حساب</button>
     </div>
     
-    <!-- Login Form -->
     <div id="loginForm" class="form active">
         <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
         <input type="password" id="loginPassword" placeholder="كلمة المرور">
         <button id="loginBtn">تسجيل الدخول</button>
         <div id="loginError" class="error"></div>
-        <div class="footer">
-            ليس لديك حساب؟ <a id="switchToRegister">إنشاء حساب</a>
-        </div>
+        <div class="footer">ليس لديك حساب؟ <a id="switchToRegister">إنشاء حساب</a></div>
     </div>
     
-    <!-- Register Form -->
     <div id="registerForm" class="form">
         <input type="text" id="regName" placeholder="اسم المستخدم">
         <input type="email" id="regEmail" placeholder="البريد الإلكتروني">
@@ -161,57 +143,34 @@
         <input type="password" id="regConfirm" placeholder="تأكيد كلمة المرور">
         <button id="registerBtn">إنشاء حساب</button>
         <div id="registerError" class="error"></div>
-        <div class="footer">
-            لديك حساب؟ <a id="switchToLogin">تسجيل الدخول</a>
-        </div>
+        <div class="footer">لديك حساب؟ <a id="switchToLogin">تسجيل الدخول</a></div>
     </div>
 </div>
 
+<script src="firebase-config.js"></script>
 <script>
-    // ==================== Firebase Configuration (مدمج) ====================
-    const firebaseConfig = {
-        apiKey: "AIzaSyDqh0Gtl0lIZl8Rt1PvdE67U8yyhjxpJdw",
-        authDomain: "gomr-3356f.firebaseapp.com",
-        databaseURL: "https://gomr-3356f-default-rtdb.firebaseio.com",
-        projectId: "gomr-3356f",
-        storageBucket: "gomr-3356f.firebasestorage.app",
-        messagingSenderId: "470296286364",
-        appId: "1:470296286364:web:2bb6e28a2095757da88959",
-        measurementId: "G-4MLFT3DHJB"
-    };
-    
-    // Initialize Firebase
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    
-    const auth = firebase.auth();
-    const db = firebase.database();
-    const ADMIN_EMAIL = 'jasim88v@gmail.com';
-    
-    console.log('✅ Firebase initialized');
-    
-    // ==================== UI Functions ====================
-    function showLoginForm() {
+    function showLogin() {
         document.getElementById('loginForm').classList.add('active');
         document.getElementById('registerForm').classList.remove('active');
         document.getElementById('tabLoginBtn').classList.add('active');
         document.getElementById('tabRegisterBtn').classList.remove('active');
-        clearErrors();
+        document.getElementById('loginError').innerHTML = '';
+        document.getElementById('registerError').innerHTML = '';
     }
     
-    function showRegisterForm() {
+    function showRegister() {
         document.getElementById('registerForm').classList.add('active');
         document.getElementById('loginForm').classList.remove('active');
         document.getElementById('tabRegisterBtn').classList.add('active');
         document.getElementById('tabLoginBtn').classList.remove('active');
-        clearErrors();
-    }
-    
-    function clearErrors() {
         document.getElementById('loginError').innerHTML = '';
         document.getElementById('registerError').innerHTML = '';
     }
+    
+    document.getElementById('tabLoginBtn').onclick = showLogin;
+    document.getElementById('tabRegisterBtn').onclick = showRegister;
+    document.getElementById('switchToRegister').onclick = showRegister;
+    document.getElementById('switchToLogin').onclick = showLogin;
     
     function setLoading(btnId, loading, text) {
         const btn = document.getElementById(btnId);
@@ -224,14 +183,8 @@
         }
     }
     
-    // ==================== Event Listeners ====================
-    document.getElementById('tabLoginBtn').addEventListener('click', showLoginForm);
-    document.getElementById('tabRegisterBtn').addEventListener('click', showRegisterForm);
-    document.getElementById('switchToRegister').addEventListener('click', showRegisterForm);
-    document.getElementById('switchToLogin').addEventListener('click', showLoginForm);
-    
-    // ==================== Login ====================
-    document.getElementById('loginBtn').addEventListener('click', async () => {
+    // Login
+    document.getElementById('loginBtn').onclick = async () => {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         
@@ -244,42 +197,31 @@
         
         try {
             const result = await auth.signInWithEmailAndPassword(email, password);
-            console.log('✅ Login success:', result.user.email);
-            
-            // Check if user exists in database
             const snapshot = await db.ref(`users/${result.user.uid}`).once('value');
             if (!snapshot.exists()) {
                 await db.ref(`users/${result.user.uid}`).set({
                     name: result.user.displayName || email.split('@')[0],
                     email: email,
                     bio: "مرحباً! أنا في VIBE ✨",
-                    avatar: "",
-                    cover: "",
-                    website: "",
-                    verified: false,
-                    isAdmin: email === ADMIN_EMAIL,
-                    blockedUsers: {},
-                    mutedUntil: 0,
-                    createdAt: Date.now()
+                    avatar: "", cover: "", website: "",
+                    verified: false, isAdmin: email === ADMIN_EMAIL,
+                    blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
                 });
             }
-            
             window.location.href = 'index.html';
         } catch (error) {
-            console.error('Login error:', error.code);
             let msg = '';
             if (error.code === 'auth/user-not-found') msg = '❌ لا يوجد حساب بهذا البريد';
             else if (error.code === 'auth/wrong-password') msg = '❌ كلمة المرور غير صحيحة';
             else if (error.code === 'auth/invalid-email') msg = '❌ البريد الإلكتروني غير صالح';
-            else if (error.code === 'auth/too-many-requests') msg = '❌ تم تعطيل الحساب مؤقتاً';
             else msg = '❌ ' + error.message;
             document.getElementById('loginError').innerHTML = msg;
             setLoading('loginBtn', false, 'تسجيل الدخول');
         }
-    });
+    };
     
-    // ==================== Register ====================
-    document.getElementById('registerBtn').addEventListener('click', async () => {
+    // Register
+    document.getElementById('registerBtn').onclick = async () => {
         const name = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value;
@@ -303,25 +245,15 @@
         try {
             const result = await auth.createUserWithEmailAndPassword(email, password);
             await result.user.updateProfile({ displayName: name });
-            
             await db.ref(`users/${result.user.uid}`).set({
-                name: name,
-                email: email,
+                name: name, email: email,
                 bio: "مرحباً! أنا في VIBE ✨",
-                avatar: "",
-                cover: "",
-                website: "",
-                verified: false,
-                isAdmin: email === ADMIN_EMAIL,
-                blockedUsers: {},
-                mutedUntil: 0,
-                createdAt: Date.now()
+                avatar: "", cover: "", website: "",
+                verified: false, isAdmin: email === ADMIN_EMAIL,
+                blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
             });
-            
-            console.log('✅ Register success:', email);
             window.location.href = 'index.html';
         } catch (error) {
-            console.error('Register error:', error.code);
             let msg = '';
             if (error.code === 'auth/email-already-in-use') msg = '❌ البريد الإلكتروني مستخدم بالفعل';
             else if (error.code === 'auth/invalid-email') msg = '❌ البريد الإلكتروني غير صالح';
@@ -330,15 +262,11 @@
             document.getElementById('registerError').innerHTML = msg;
             setLoading('registerBtn', false, 'إنشاء حساب');
         }
-    });
+    };
     
-    // Auto redirect if already logged in
     auth.onAuthStateChanged((user) => {
-        if (user) {
-            window.location.href = 'index.html';
-        }
+        if (user) window.location.href = 'index.html';
     });
 </script>
-
 </body>
 </html>
