@@ -1,3 +1,4 @@
+// ==================== Firebase Configuration ====================
 const firebaseConfig = {
     apiKey: "AIzaSyDqh0Gtl0lIZl8Rt1PvdE67U8yyhjxpJdw",
     authDomain: "gomr-3356f.firebaseapp.com",
@@ -9,16 +10,19 @@ const firebaseConfig = {
     measurementId: "G-4MLFT3DHJB"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
+// Services
 const auth = firebase.auth();
 const db = firebase.database();
 const storage = firebase.storage();
 
+// Cloudinary
 const CLOUD_NAME = 'daemk3hut';
 const UPLOAD_PRESET = 'fok2_k';
 const AGORA_APP_ID_CALL = '4017f66ea15f4ce088e8d8993a072a5b';
 const ADMIN_EMAIL = 'jasim88v@gmail.com';
 const ADMIN_PASSWORD = 'kk2314kk';
 
-console.log('✅ VIBE - Firebase, Cloudinary & Agora Ready');
+console.log('✅ VIBE - Firebase Ready');
