@@ -1,4 +1,4 @@
-name: 🖤 MTNAKA 2026 - Auto Deploy
+name: 💖 VIBE 2026 - Auto Deploy
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       deploy_message:
         description: 'وصف النشر'
         required: false
-        default: '🖤 MTNAKA Auto Deploy'
+        default: '💖 VIBE Auto Deploy'
 
 permissions:
   contents: write
@@ -19,7 +19,7 @@ jobs:
     
     steps:
       # ═══════════════════════════════════════
-      # 🖤 الخطوة 1: سحب المستودع
+      # 💖 الخطوة 1: سحب المستودع
       # ═══════════════════════════════════════
       - name: 📥 سحب المستودع
         uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
       
       # ═══════════════════════════════════════
-      # 🖤 الخطوة 2: إعداد Python
+      # 💖 الخطوة 2: إعداد Python
       # ═══════════════════════════════════════
       - name: 🐍 إعداد Python 3.12
         uses: actions/setup-python@v5
@@ -35,46 +35,56 @@ jobs:
           python-version: '3.12'
       
       # ═══════════════════════════════════════
-      # 🖤 الخطوة 3: تشغيل المولد
+      # 💖 الخطوة 3: تشغيل المولد
       # ═══════════════════════════════════════
       - name: 🔧 تشغيل scraper.py لتوليد الملفات
         run: |
-          echo "🖤 بدء توليد MTNAKA..."
+          echo "💖 بدء توليد VIBE..."
           python scraper.py
-          echo "✅ تم توليد جميع الملفات"
+          echo "✅ تم توليد جميع الملفات في مجلد gtheb/"
       
       # ═══════════════════════════════════════
-      # 🖤 الخطوة 4: عرض الملفات المنشأة
+      # 💖 الخطوة 4: نسخ الملفات من gtheb للمجلد الرئيسي
+      # ═══════════════════════════════════════
+      - name: 📁 نسخ الملفات للمجلد الرئيسي
+        run: |
+          echo "📁 جاري نسخ الملفات من gtheb/ ..."
+          cp -r gtheb/* .
+          echo "✅ تم نسخ جميع الملفات"
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 5: عرض الملفات المنشأة
       # ═══════════════════════════════════════
       - name: 📋 عرض الملفات المنشأة
         run: |
           echo ""
           echo "╔══════════════════════════════════════╗"
-          echo "║  🖤 MTNAKA - ملفات المنشأة  ║"
+          echo "║  💖 VIBE - الملفات المنشأة  ║"
           echo "╚══════════════════════════════════════╝"
           echo ""
           echo "📁 الملفات:"
-          ls -la *.html *.js 2>/dev/null || echo "  ⚠️ لا توجد ملفات بعد"
+          ls -la *.html *.js *.css 2>/dev/null || echo "  ⚠️ لا توجد ملفات بعد"
           echo ""
           echo "📊 إحصائيات:"
           echo "  • HTML files: $(ls -1 *.html 2>/dev/null | wc -l)"
+          echo "  • CSS files: $(ls -1 *.css 2>/dev/null | wc -l)"
           echo "  • JS files: $(ls -1 *.js 2>/dev/null | wc -l)"
-          echo "  • Total lines: $(cat *.html *.js 2>/dev/null | wc -l)"
+          echo "  • Total lines: $(cat *.html *.js *.css 2>/dev/null | wc -l)"
           echo ""
       
       # ═══════════════════════════════════════
-      # 🖤 الخطوة 5: نشر الملفات
+      # 💖 الخطوة 6: نشر الملفات
       # ═══════════════════════════════════════
       - name: 🚀 رفع الملفات إلى GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "🖤 MTNAKA 2026 - Auto Deploy [skip ci]"
-          commit_author: "MTNAKA Bot 🤖 <actions@github.com>"
+          commit_message: "💖 VIBE 2026 - Auto Deploy [skip ci]"
+          commit_author: "VIBE Bot 🤖 <actions@github.com>"
           commit_user_email: "actions@github.com"
-          commit_user_name: "MTNAKA Bot"
+          commit_user_name: "VIBE Bot"
           
-          # رفع جميع ملفات HTML و JS
-          file_pattern: '*.html *.js'
+          # رفع جميع ملفات HTML و CSS و JS
+          file_pattern: '*.html *.js *.css'
           
           # خيارات إضافية
           push_options: '--force'
@@ -82,26 +92,30 @@ jobs:
           skip_fetch: false
       
       # ═══════════════════════════════════════
-      # 🖤 الخطوة 6: تأكيد النشر
+      # 💖 الخطوة 7: تأكيد النشر
       # ═══════════════════════════════════════
       - name: ✅ تأكيد النشر الناجح
         run: |
           echo ""
           echo "╔════════════════════════════════════════════╗"
           echo "║                                            ║"
-          echo "║  🖤  MTNAKA 2026                           ║"
+          echo "║  💖  VIBE 2026                             ║"
           echo "║  ✅  تم النشر بنجاح!                       ║"
           echo "║                                            ║"
-          echo "║  📂  الملفات المنشورة:                     ║"
+          echo "║  📂  الملفات المنشورة (10 ملفات):           ║"
+          echo "║     • firebase-config.js                   ║"
           echo "║     • auth.html                            ║"
           echo "║     • index.html                           ║"
-          echo "║     • profile.html                         ║"
-          echo "║     • upload.html                          ║"
-          echo "║     • chat.html                            ║"
-          echo "║     • explore.html                         ║"
-          echo "║     • notifications.html                   ║"
-          echo "║     • settings.html                        ║"
-          echo "║     • firebase-config.js                   ║"
+          echo "║     • style.css                            ║"
+          echo "║     • script.js                            ║"
+          echo "║     • profile.js                           ║"
+          echo "║     • chat.js                              ║"
+          echo "║     • posts.js                             ║"
+          echo "║     • admin.js                             ║"
+          echo "║     • extras.js                            ║"
+          echo "║                                            ║"
+          echo "║  🎀  Premium Pink Glass Design             ║"
+          echo "║  💎  Verified Badge System                 ║"
           echo "║                                            ║"
           echo "║  🔗 رابط المستودع:                         ║"
           echo "║     ${{ github.server_url }}/${{ github.repository }}"
@@ -110,7 +124,7 @@ jobs:
           echo ""
 
   # ═══════════════════════════════════════════════
-  # 🖤 Job 2: إرسال إشعار (اختياري)
+  # 💖 Job 2: إرسال إشعار (اختياري)
   # ═══════════════════════════════════════════════
   notify:
     needs: generate-and-deploy
@@ -121,8 +135,7 @@ jobs:
       - name: 📊 ملخص النشر
         run: |
           if [ "${{ needs.generate-and-deploy.result }}" == "success" ]; then
-            echo "🟢 النشر نجح! 🖤"
+            echo "🟢 النشر نجح! 💖"
           else
             echo "🔴 النشر فشل!"
           fi
-
