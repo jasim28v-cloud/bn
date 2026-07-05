@@ -3,7 +3,7 @@
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                            ║
 ║  💖  VIBE 2026 - PREMIUM PINK GLASS EDITION  💖          ║
-║     Ultimate Generator - 10 Files - 3000+ Lines            ║
+║     Ultimate Generator - 10 Files - 3500+ Lines            ║
 ║                                                            ║
 ║  🔥  Firebase: gomr-3356f                                 ║
 ║  ☁️   Cloudinary: daemk3hut / fok2_k                       ║
@@ -12,7 +12,8 @@
 ║  💖  Design: Premium Pink Glass Transparent               ║
 ║                                                            ║
 ║  ✨  PREMIUM FEATURES:                                     ║
-║     • 🔔 Notification System (Working 100%)              ║
+║     • ✅ Verified Badge System (Admin Managed)           ║
+║     • 🔔 Notification System                             ║
 ║     • 🎬 Video Player with Controls                      ║
 ║     • 🖼️  Image Viewer with Navigation                  ║
 ║     • 💬 Real-time Chat + Typing Indicators              ║
@@ -28,6 +29,7 @@
 ║     • 📱 Infinite Scroll Feed                            ║
 ║     • 🛡️  Admin Panel + Bad Words Filter                ║
 ║     • 🎀 Premium Pink Glass Design                       ║
+║     • 💎 Verified Badge (تظهر في كل مكان)              ║
 ║                                                            ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -99,7 +101,7 @@ def section(title):
 def build_config():
     return f"""// 💖 VIBE 2026 - Premium Pink Glass Configuration
 // Firebase: gomr-3356f | Cloudinary: daemk3hut
-// ✨ PREMIUM: Chat + Video Calls + Stories + Polls
+// ✨ PREMIUM: Verified Badges + Chat + Video Calls + Stories
 
 const firebaseConfig = {{
     apiKey: "{FIREBASE_CONFIG['apiKey']}",
@@ -161,6 +163,12 @@ def build_auth():
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --pink: #ec4899;
+            --pink-light: #f472b6;
+            --pink-pale: #fbcfe8;
+            --pink-dark: #be185d;
+        }
         *{margin:0;padding:0;box-sizing:border-box}
         body{
             min-height:100vh;
@@ -230,6 +238,26 @@ def build_auth():
 
         .msg{text-align:center;color:#fca5a5;font-size:13px;margin-top:12px;min-height:20px}
         .msg.success{color:#4ade80}
+
+        /* 💎 Verified Badge Style */
+        .verified-badge-auth {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #ec4899, #f472b6);
+            color: #fff;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 10px;
+            margin-right: 4px;
+            box-shadow: 0 0 12px rgba(236,72,153,0.5);
+            animation: verifyGlow 2s ease-in-out infinite;
+        }
+        @keyframes verifyGlow {
+            0%,100% { box-shadow: 0 0 12px rgba(236,72,153,0.5); }
+            50% { box-shadow: 0 0 22px rgba(244,114,182,0.8); }
+        }
     </style>
 </head>
 <body>
@@ -457,7 +485,7 @@ def build_index():
         </div>
     </div>
 
-    <!-- 💖 Panels -->
+    <!-- 💖 Panels Container -->
     <div id="commentsPanel" class="chat-panel">
         <div class="chat-header"><h3 style="font-weight: 600;">💬 التعليقات</h3><button onclick="closeComments()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #fff;">&times;</button></div>
         <div id="commentsList" class="chat-messages"></div>
@@ -557,6 +585,11 @@ def build_index():
 
 <script src="firebase-config.js"></script>
 <script src="script.js"></script>
+<script src="profile.js"></script>
+<script src="chat.js"></script>
+<script src="posts.js"></script>
+<script src="admin.js"></script>
+<script src="extras.js"></script>
 
 </body>
 </html>"""
@@ -610,7 +643,10 @@ body.dark-mode .top-icon, body.dark-mode .post-action, body.dark-mode .nav-item 
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pinkGlow { 0% { text-shadow: 0 0 0px var(--pink); } 50% { text-shadow: 0 0 20px var(--pink); } 100% { text-shadow: 0 0 0px var(--pink); } }
 @keyframes heartFloat { 0% { transform: scale(0.5) translateY(0); opacity: 1; } 100% { transform: scale(1.5) translateY(-50px); opacity: 0; } }
-@keyframes btnPress { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
+@keyframes verifyGlow {
+    0%,100% { box-shadow: 0 0 12px rgba(236,72,153,0.5); }
+    50% { box-shadow: 0 0 22px rgba(244,114,182,0.8); }
+}
 
 .fade-in { animation: fadeIn 0.3s ease-out; }
 .post-card { animation: fadeIn 0.2s ease-out; transition: transform 0.15s; cursor: pointer; }
@@ -918,10 +954,74 @@ body.dark-mode .load-more-btn { background: #1a1a1a; color: white; }
 
 .message-image { max-width: 200px; border-radius: 12px; margin-top: 8px; cursor: pointer; }
 .schedule-picker { display: none; margin-top: 12px; padding: 12px; background: rgba(236,72,153,0.03); border-radius: 12px; border: 1px solid rgba(236,72,153,0.1); }
+
+/* 💎 Verified Badge - Premium Pink */
+.verified-badge-main {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: #fff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 4px;
+    box-shadow: 0 0 15px rgba(236,72,153,0.5);
+    animation: verifyGlow 2s ease-in-out infinite;
+}
+
+.verified-badge-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: #fff;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 9px;
+    margin-right: 3px;
+    box-shadow: 0 0 10px rgba(236,72,153,0.4);
+}
+
+.verified-badge-lg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: #fff;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 14px;
+    margin-right: 6px;
+    box-shadow: 0 0 20px rgba(236,72,153,0.6);
+    animation: verifyGlow 2s ease-in-out infinite;
+}
+
+.admin-verify-btn {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    margin: 0 4px;
+    transition: transform 0.1s;
+}
+.admin-verify-btn:active { transform: scale(0.95); }
+.admin-verify-btn.unverify {
+    background: rgba(239,68,68,0.2);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.3);
+}
 """
 
 # ═══════════════════════════════════════════════════════════
-# 💖 5. script.js - الجافاسكريبت الكامل
+# 💖 5. script.js - الدوال الأساسية + المصادقة
 # ═══════════════════════════════════════════════════════════
 
 def build_script():
@@ -1033,6 +1133,11 @@ function filterBadWords(text) {
     return filtered;
 }
 
+// 💎 Verified Badge HTML Generator
+function getVerifiedBadge(size = 'main') {
+    return `<span class="verified-badge-${size}"><i class="fas fa-check"></i></span>`;
+}
+
 // ==================== رفع الملفات ====================
 async function uploadToCloudinary(file) {
     const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
@@ -1051,32 +1156,373 @@ async function uploadToCloudinary(file) {
     }
 }
 
-// ==================== الكلمات الممنوعة ====================
-async function loadBadWordsList() {
-    const snapshot = await db.ref('badWords').once('value');
-    const words = snapshot.val();
-    badWordsList = words ? Object.values(words) : [];
+// ==================== الإعدادات ====================
+function toggleReadMode() {
+    readModeActive = !readModeActive;
+    const toggle = document.getElementById('readModeToggle');
+    if (readModeActive) {
+        document.body.classList.add('read-mode');
+        toggle.classList.add('active');
+        localStorage.setItem('readMode', 'true');
+    } else {
+        document.body.classList.remove('read-mode');
+        toggle.classList.remove('active');
+        localStorage.setItem('readMode', 'false');
+    }
+    showToast(readModeActive ? 'تم تفعيل وضع القراءة' : 'تم إلغاء وضع القراءة');
 }
 
-async function addBadWord(word) {
-    if (!word.trim()) return;
-    await db.ref('badWords').push(word.trim().toLowerCase());
-    await loadBadWordsList();
-    showToast(`تمت إضافة كلمة: ${word}`);
-    if (currentUser?.isAdmin) openAdminPanel();
+function toggleHideLikes() {
+    hideLikesActive = !hideLikesActive;
+    const toggle = document.getElementById('hideLikesToggle');
+    if (hideLikesActive) { toggle.classList.add('active'); localStorage.setItem('hideLikes', 'true'); }
+    else { toggle.classList.remove('active'); localStorage.setItem('hideLikes', 'false'); }
+    showToast(hideLikesActive ? 'تم إخفاء عدد الإعجابات' : 'تم إظهار عدد الإعجابات');
+    refreshFeedCache();
 }
 
-async function removeBadWord(wordId, word) {
-    await db.ref(`badWords/${wordId}`).remove();
-    await loadBadWordsList();
-    showToast(`تم حذف كلمة: ${word}`);
-    if (currentUser?.isAdmin) openAdminPanel();
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    const themeIcon = document.getElementById('themeToggle');
+    if (themeIcon) {
+        if (isDark) { themeIcon.classList.remove('fa-adjust'); themeIcon.classList.add('fa-sun'); }
+        else { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-adjust'); }
+    }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    showToast(isDark ? '🌙 الوضع الليلي' : '☀️ الوضع النهاري');
 }
 
-function showAddBadWordModal() {
-    const word = prompt('📝 أدخل الكلمة التي تريد منعها:');
-    if (word && word.trim()) addBadWord(word.trim());
+async function toggleDoNotDisturb() {
+    const dndToggle = document.getElementById('dndToggle');
+    const isDnd = dndToggle.classList.contains('active');
+    if (isDnd) { dndToggle.classList.remove('active'); await db.ref(`users/${currentUser.uid}/dnd`).set(false); showToast('تم تفعيل الإشعارات'); }
+    else { dndToggle.classList.add('active'); await db.ref(`users/${currentUser.uid}/dnd`).set(true); showToast('تم تفعيل عدم الإزعاج'); }
 }
+
+async function loadDndStatus() {
+    const snapshot = await db.ref(`users/${currentUser.uid}/dnd`).once('value');
+    const isDnd = snapshot.val();
+    const dndToggle = document.getElementById('dndToggle');
+    if (isDnd && dndToggle) dndToggle.classList.add('active');
+    else if (dndToggle) dndToggle.classList.remove('active');
+}
+
+// ==================== تسجيل الخروج ====================
+async function logout() {
+    try {
+        await auth.signOut();
+        localStorage.removeItem('auth_logged_in');
+        showToast('تم تسجيل الخروج بنجاح');
+        setTimeout(() => { window.location.href = 'auth.html'; }, 1000);
+    } catch (error) {
+        console.error('Logout error:', error);
+        showToast('حدث خطأ أثناء تسجيل الخروج');
+    }
+}
+
+// ==================== تغيير الصورة والغلاف ====================
+async function changeAvatar() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const url = await uploadToCloudinary(file);
+            if (url) {
+                await db.ref(`users/${currentUser.uid}`).update({ avatar: url });
+                currentUser.avatar = url;
+                if (currentProfileUser) openProfile(currentProfileUser);
+                else openProfile(currentUser.uid);
+                showToast('تم تغيير الصورة الشخصية 💖');
+            }
+        }
+    };
+    input.click();
+}
+
+async function changeCover() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const url = await uploadToCloudinary(file);
+            if (url) {
+                await db.ref(`users/${currentUser.uid}`).update({ cover: url });
+                currentUser.cover = url;
+                if (currentProfileUser) openProfile(currentProfileUser);
+                else openProfile(currentUser.uid);
+                showToast('تم تغيير صورة الغلاف 💖');
+            }
+        }
+    };
+    input.click();
+}
+
+// ==================== دوال الإغلاق والواجهات ====================
+function closeCompose() { document.getElementById('composeModal').classList.remove('open'); document.getElementById('postText').value = ''; document.getElementById('mediaPreview').innerHTML = ''; document.getElementById('mediaPreview').style.display = 'none'; document.getElementById('pollBuilder').style.display = 'none'; document.getElementById('schedulePicker').style.display = 'none'; selectedMediaFile = null; }
+function openCompose() { document.getElementById('composeModal').classList.add('open'); }
+function closeComments() { document.getElementById('commentsPanel').classList.remove('open'); currentPostId = null; }
+function closeProfile() { document.getElementById('profilePanel').classList.remove('open'); }
+function closeNotifications() { document.getElementById('notificationsPanel').classList.remove('open'); }
+function closeSearch() { document.getElementById('searchPanel').classList.remove('open'); document.getElementById('searchInput').value = ''; document.getElementById('searchResults').innerHTML = ''; }
+function openSearch() { document.getElementById('searchPanel').classList.add('open'); }
+function goToHome() { refreshFeedCache(); }
+function switchTab(tab) { if (tab === 'home') refreshFeedCache(); }
+
+function previewMedia(input, type) {
+    const file = input.files[0];
+    if (file) {
+        selectedMediaFile = file;
+        const preview = document.getElementById('mediaPreview');
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (type === 'image') preview.innerHTML = `<img src="${e.target.result}">`;
+            else preview.innerHTML = `<video src="${e.target.result}" controls></video>`;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// ==================== الترند ====================
+async function loadTrendingHashtags() {
+    const hashtagSnapshot = await db.ref('hashtags').once('value');
+    const hashtags = hashtagSnapshot.val();
+    if (!hashtags) return;
+    const trending = [];
+    for (const [tag, posts] of Object.entries(hashtags)) { trending.push({ tag, count: Object.keys(posts).length }); }
+    trending.sort((a, b) => b.count - a.count);
+    const top5 = trending.slice(0, 5);
+    const container = document.getElementById('trendingList');
+    if (container) {
+        container.innerHTML = top5.map((item, index) => `
+            <div class="trending-item" onclick="searchHashtag('${item.tag}')">
+                <div style="font-weight: 600; color: var(--pink);">#${escapeHtml(item.tag)}</div>
+                <div style="font-size: 12px; color: #8e8e8e;">${item.count} منشور</div>
+            </div>
+        `).join('');
+    }
+}
+
+// ==================== تحديث آخر ظهور ====================
+setInterval(async () => { if (currentUser) await db.ref(`users/${currentUser.uid}/lastSeen`).set(Date.now()); }, 60000);
+
+// ==================== المصادقة ====================
+const initLoader = document.getElementById('initLoader');
+
+auth.onAuthStateChanged(async (user) => {
+    if (initLoader) { setTimeout(() => { initLoader.style.opacity = '0'; setTimeout(() => { if (initLoader) initLoader.style.display = 'none'; }, 300); }, 500); }
+    
+    if (user) {
+        currentUser = user;
+        const snapshot = await db.ref(`users/${user.uid}`).once('value');
+        if (snapshot.exists()) { currentUser = { ...currentUser, ...snapshot.val() }; }
+        else {
+            await db.ref(`users/${user.uid}`).set({
+                uid: user.uid, name: user.displayName || user.email.split('@')[0],
+                email: user.email, bio: "مرحباً! أنا في VIBE ✨", avatar: "", cover: "",
+                website: "", verified: false, isAdmin: user.email === ADMIN_EMAIL,
+                blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
+            });
+            currentUser.isAdmin = user.email === ADMIN_EMAIL;
+        }
+        document.getElementById('mainApp').style.display = 'block';
+        
+        const st = localStorage.getItem('theme');
+        if (st === 'dark') document.body.classList.add('dark-mode');
+        const srm = localStorage.getItem('readMode');
+        if (srm === 'true') { readModeActive = true; document.getElementById('readModeToggle')?.classList.add('active'); }
+        const shl = localStorage.getItem('hideLikes');
+        if (shl === 'true') { hideLikesActive = true; document.getElementById('hideLikesToggle')?.classList.add('active'); }
+        
+        await loadBadWordsList();
+        resetInfiniteScroll();
+        await loadFeed();
+        loadNotifications();
+        loadTrendingHashtags();
+        loadDndStatus();
+        checkScheduledPosts();
+    } else {
+        window.location.href = 'auth.html';
+    }
+});
+
+console.log('💖 VIBE 2026 - Premium Pink Glass Ready!');
+"""
+
+# ═══════════════════════════════════════════════════════════
+# 💖 6. profile.js - الملف الشخصي
+# ═══════════════════════════════════════════════════════════
+
+def build_profile_js():
+    return """// 💖 VIBE 2026 - Profile Module
+// ==================== الملف الشخصي ====================
+
+async function openMyProfile() { if (currentUser) openProfile(currentUser.uid); }
+
+async function openProfile(userId) {
+    currentProfileUser = userId;
+    const snapshot = await db.ref(`users/${userId}`).once('value');
+    const userData = snapshot.val();
+    if (!userData) return;
+    await recordProfileView(userId);
+    const pc = document.getElementById('profileCover');
+    if (pc) { pc.style.backgroundImage = userData.cover ? `url(${userData.cover})` : 'linear-gradient(135deg, #ec4899, #f472b6)'; pc.style.backgroundSize = 'cover'; pc.style.backgroundPosition = 'center'; }
+    document.getElementById('profileAvatarLarge').innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fas fa-user text-5xl text-white flex items-center justify-center h-full"></i>';
+    
+    // 💎 Verified Badge in Profile
+    const verifiedBadgeHtml = userData.verified ? getVerifiedBadge('lg') : '';
+    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${verifiedBadgeHtml}`;
+    document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في VIBE ✨";
+    const we = document.getElementById('profileWebsite');
+    we.innerHTML = userData.website ? `<a href="${userData.website}" target="_blank" style="color: #ec4899;">${userData.website}</a>` : '';
+    
+    const fs = await db.ref(`followers/${userId}`).once('value');
+    const fgs = await db.ref(`following/${userId}`).once('value');
+    const vs = await db.ref(`profileViews/${userId}`).once('value');
+    document.getElementById('profileFollowersCount').textContent = fs.exists() ? Object.keys(fs.val()).length : 0;
+    document.getElementById('profileFollowingCount').textContent = fgs.exists() ? Object.keys(fgs.val()).length : 0;
+    document.getElementById('profileViewsCount').textContent = vs.exists() ? Object.keys(vs.val()).length : 0;
+    
+    const ps = await db.ref('posts').once('value');
+    const posts = ps.val();
+    document.getElementById('profilePostsCount').textContent = posts ? Object.values(posts).filter(p => p.userId === userId).length : 0;
+    
+    const bd = document.getElementById('profileButtons');
+    if (userId !== currentUser.uid) {
+        const isF = await checkIfFollowing(userId);
+        const isB = await isBlocked(userId);
+        bd.innerHTML = `<button class="profile-btn ${isF ? '' : 'profile-btn-primary'}" onclick="toggleFollow('${userId}')">${isF ? 'متابَع' : 'متابعة'}</button><button class="profile-btn" onclick="openChat('${userId}')"><i class="fas fa-comment"></i> راسل</button><button class="profile-btn" onclick="startVideoCallWithUser('${userId}')"><i class="fas fa-video"></i></button>${isB ? `<button class="profile-btn" onclick="unblockUser('${userId}')">إلغاء الحظر</button>` : `<button class="profile-btn" onclick="blockUser('${userId}')">حظر</button>`}`;
+    } else {
+        let ab = (currentUser.isAdmin || currentUser.email === ADMIN_EMAIL) ? `<button class="profile-btn profile-btn-primary" onclick="openAdminPanel()"><i class="fas fa-cog"></i> لوحة التحكم</button>` : '';
+        bd.innerHTML = `<button class="profile-btn" onclick="openEditProfileModal()"><i class="fas fa-edit"></i> تعديل</button><button class="profile-btn" onclick="changeAvatar()"><i class="fas fa-camera"></i> صورة</button><button class="profile-btn" onclick="changeCover()"><i class="fas fa-image"></i> غلاف</button>${ab}`;
+    }
+    await loadProfilePosts(userId);
+    document.getElementById('profilePanel').classList.add('open');
+}
+
+async function checkIfFollowing(userId) { const s = await db.ref(`followers/${userId}/${currentUser.uid}`).once('value'); return s.exists(); }
+
+async function toggleFollow(userId) {
+    const isF = await checkIfFollowing(userId);
+    if (isF) { await db.ref(`followers/${userId}/${currentUser.uid}`).remove(); await db.ref(`following/${currentUser.uid}/${userId}`).remove(); showToast('تم إلغاء المتابعة'); }
+    else {
+        await db.ref(`followers/${userId}/${currentUser.uid}`).set({ uid: currentUser.uid, name: currentUser.displayName || currentUser.name, timestamp: Date.now() });
+        await db.ref(`following/${currentUser.uid}/${userId}`).set({ uid: userId, timestamp: Date.now() });
+        showToast('تم المتابعة 💖');
+        const ds = await db.ref(`users/${userId}/dnd`).once('value');
+        if (!ds.val()) await db.ref(`notifications/${userId}`).push({ type: 'follow', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, timestamp: Date.now(), read: false });
+    }
+    openProfile(userId);
+}
+
+async function loadProfilePosts(userId) {
+    const ps = await db.ref('posts').once('value');
+    const posts = ps.val();
+    const ups = posts ? Object.values(posts).filter(p => p.userId === userId).sort((a, b) => b.timestamp - a.timestamp) : [];
+    const grid = document.getElementById('profilePostsGrid');
+    if (!grid) return;
+    if (!ups.length) { grid.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد منشورات</div>'; return; }
+    grid.innerHTML = ups.map(p => `<div class="grid-item" onclick="openComments('${p.id}')">${p.mediaUrl ? (p.mediaType === 'image' ? `<img src="${p.mediaUrl}">` : `<video src="${p.mediaUrl}"></video>`) : '<div class="flex items-center justify-center h-full"><i class="fas fa-file-alt text-2xl text-gray-500"></i></div>'}<div class="grid-item-overlay"><span><i class="fas fa-heart"></i> ${p.likes ? Object.keys(p.likes).length : 0}</span><span><i class="fas fa-comment"></i> ${p.commentsCount || 0}</span></div></div>`).join('');
+}
+
+async function loadProfileMedia(userId) {
+    const ps = await db.ref('posts').once('value');
+    const posts = ps.val();
+    const ups = posts ? Object.values(posts).filter(p => p.userId === userId && p.mediaUrl).sort((a, b) => b.timestamp - a.timestamp) : [];
+    const grid = document.getElementById('profilePostsGrid');
+    if (!grid) return;
+    if (!ups.length) { grid.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد وسائط</div>'; return; }
+    grid.innerHTML = ups.map(p => `<div class="grid-item" onclick="openComments('${p.id}')">${p.mediaType === 'image' ? `<img src="${p.mediaUrl}">` : `<video src="${p.mediaUrl}"></video>`}</div>`).join('');
+}
+
+function openEditProfileModal() {
+    document.getElementById('editName').value = currentUser.displayName || currentUser.name || '';
+    document.getElementById('editBio').value = currentUser.bio || '';
+    document.getElementById('editWebsite').value = currentUser.website || '';
+    document.getElementById('editProfileModal').classList.add('open');
+}
+function closeEditProfileModal() { document.getElementById('editProfileModal').classList.remove('open'); }
+
+async function saveProfileEdit() {
+    const nn = document.getElementById('editName')?.value;
+    const nb = document.getElementById('editBio')?.value;
+    const nw = document.getElementById('editWebsite')?.value;
+    if (nn && nn.trim()) await currentUser.updateProfile({ displayName: nn.trim() });
+    await db.ref(`users/${currentUser.uid}`).update({ name: nn || currentUser.name, bio: nb || "", website: nw || "" });
+    currentUser.name = nn || currentUser.name; currentUser.bio = nb || ""; currentUser.website = nw || "";
+    currentUser.displayName = nn || currentUser.displayName;
+    closeEditProfileModal(); openProfile(currentUser.uid); showToast('تم حفظ التغييرات 💖');
+}
+
+// ==================== مشاهدات الملف الشخصي ====================
+async function recordProfileView(viewedUserId) {
+    if (viewedUserId === currentUser.uid) return;
+    await db.ref(`profileViews/${viewedUserId}/${currentUser.uid}`).set({
+        viewerId: currentUser.uid, viewerName: currentUser.displayName || currentUser.name,
+        viewerAvatar: currentUser.avatar || '', timestamp: Date.now()
+    });
+}
+
+async function openProfileViews() {
+    const snapshot = await db.ref(`profileViews/${currentProfileUser || currentUser.uid}`).once('value');
+    const views = snapshot.val();
+    const container = document.getElementById('profileViewsList');
+    if (!views) {
+        container.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد مشاهدات بعد</div>';
+    } else {
+        let html = '';
+        const viewsArray = Object.values(views).sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
+        for (const view of viewsArray) {
+            // 💎 Check if viewer is verified
+            const viewerSnap = await db.ref(`users/${view.viewerId}`).once('value');
+            const viewerData = viewerSnap.val();
+            const vBadge = viewerData?.verified ? getVerifiedBadge('sm') : '';
+            html += `<div class="follower-item" onclick="closeProfileViews(); openProfile('${view.viewerId}')">
+                <div class="post-avatar" style="width: 44px; height: 44px;">${view.viewerAvatar ? `<img src="${view.viewerAvatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div>
+                <div><div style="font-weight: 600;">${vBadge}${escapeHtml(view.viewerName)}</div><div style="font-size: 11px; color: #8e8e8e;">${formatTime(view.timestamp)}</div></div>
+            </div>`;
+        }
+        container.innerHTML = html;
+    }
+    document.getElementById('profileViewsPanel').classList.add('open');
+}
+
+function closeProfileViews() { document.getElementById('profileViewsPanel').classList.remove('open'); }
+
+// ==================== المتابعون ====================
+async function openFollowersList(type) {
+    document.getElementById('followersTitle').textContent = type === 'followers' ? 'المتابعون' : 'المتابَعون';
+    const rp = type === 'followers' ? `followers/${currentProfileUser}` : `following/${currentProfileUser}`;
+    const s = await db.ref(rp).once('value');
+    const data = s.val();
+    const c = document.getElementById('followersList');
+    if (!data) { c.innerHTML = '<div class="text-center p-4 text-gray-500">لا يوجد</div>'; }
+    else {
+        let html = '';
+        for (const [uid] of Object.entries(data)) {
+            const us = await db.ref(`users/${uid}`).once('value');
+            const ud = us.val();
+            const vBadge = ud?.verified ? getVerifiedBadge('sm') : '';
+            html += `<div class="follower-item" onclick="closeFollowers(); openProfile('${uid}')"><div class="post-avatar" style="width: 48px; height: 48px;">${ud?.avatar ? `<img src="${ud.avatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 600;">${vBadge}${escapeHtml(ud?.name || 'مستخدم')}</div></div></div>`;
+        }
+        c.innerHTML = html;
+    }
+    document.getElementById('followersPanel').classList.add('open');
+}
+function closeFollowers() { document.getElementById('followersPanel').classList.remove('open'); }
+
+console.log('💖 VIBE Profile Module Ready');
+"""
+
+# ═══════════════════════════════════════════════════════════
+# 💖 7. chat.js - المحادثات والمكالمات
+# ═══════════════════════════════════════════════════════════
+
+def build_chat_js():
+    return """// 💖 VIBE 2026 - Chat & Video Call Module
 
 // ==================== التسجيل الصوتي ====================
 async function startVoiceRecording() {
@@ -1138,7 +1584,170 @@ function listenForTyping(chatId) {
 
 function getChatId(user1, user2) { return [user1, user2].sort().join('_'); }
 
-// ==================== المنشورات ====================
+async function openChat(userId) {
+    const s = await db.ref(`users/${userId}`).once('value');
+    currentChatUser = s.val();
+    
+    // 💎 Verified Badge in Chat Header
+    const vBadge = currentChatUser.verified ? getVerifiedBadge('sm') : '';
+    document.getElementById('chatUserName').innerHTML = `${escapeHtml(currentChatUser.name)} ${vBadge}`;
+    document.getElementById('chatAvatar').innerHTML = currentChatUser.avatar ? `<img src="${currentChatUser.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>';
+    const ls = await db.ref(`users/${userId}/lastSeen`).once('value');
+    document.getElementById('chatLastSeen').textContent = ls.val() ? `آخر ظهور ${formatTime(ls.val())}` : '';
+    const chatId = getChatId(currentUser.uid, userId);
+    listenForTyping(chatId);
+    await loadChatMessages(userId);
+    document.getElementById('chatPanel').classList.add('open');
+}
+
+function closeChat() { document.getElementById('chatPanel').classList.remove('open'); if (isRecording) stopVoiceRecording(); currentChatUser = null; }
+
+async function loadChatMessages(userId) {
+    const chatId = getChatId(currentUser.uid, userId);
+    db.ref(`chats/${chatId}`).off();
+    db.ref(`chats/${chatId}`).on('value', (snapshot) => {
+        const msgs = snapshot.val();
+        const container = document.getElementById('chatMessages');
+        if (!container) return;
+        if (!msgs) { container.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد رسائل بعد</div>'; return; }
+        let html = '';
+        Object.values(msgs).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => {
+            const isS = msg.senderId === currentUser.uid;
+            html += `<div class="chat-message ${isS ? 'sent' : ''}"><div class="message-bubble ${isS ? 'sent' : ''}">${msg.text ? escapeHtml(msg.text) : ''}${msg.imageUrl ? `<img src="${msg.imageUrl}" class="message-image" onclick="openImageViewer(['${msg.imageUrl}'], 0)">` : ''}${msg.audioUrl ? `<audio controls src="${msg.audioUrl}" style="height: 36px; margin-top: 8px;"></audio>` : ''}</div></div>`;
+        });
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+    });
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chatMessageInput');
+    let text = input?.value;
+    if (!text || !currentChatUser) return;
+    if (containsBadWords(text)) return showToast('⚠️ تحتوي على كلمات ممنوعة');
+    text = filterBadWords(text);
+    await db.ref(`chats/${getChatId(currentUser.uid, currentChatUser.uid)}`).push({ senderId: currentUser.uid, text, timestamp: Date.now(), read: false });
+    input.value = '';
+}
+
+async function sendChatImage(input) {
+    const file = input.files[0];
+    if (file && currentChatUser) {
+        const url = await uploadToCloudinary(file);
+        if (url) await db.ref(`chats/${getChatId(currentUser.uid, currentChatUser.uid)}`).push({ senderId: currentUser.uid, imageUrl: url, timestamp: Date.now(), read: false });
+    }
+    input.value = '';
+}
+
+async function openConversations() {
+    const cl = document.getElementById('conversationsList');
+    cl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    const s = await db.ref('chats').once('value');
+    const chats = s.val();
+    if (!chats) { cl.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد محادثات</div>'; document.getElementById('conversationsPanel').classList.add('open'); return; }
+    const convs = [];
+    for (const [cid, msgs] of Object.entries(chats)) {
+        const [u1, u2] = cid.split('_');
+        const oid = u1 === currentUser.uid ? u2 : u1;
+        const us = await db.ref(`users/${oid}`).once('value');
+        const ud = us.val();
+        const lm = Object.values(msgs).sort((a, b) => b.timestamp - a.timestamp)[0];
+        convs.push({ userId: oid, userData: ud, lastMessage: lm, timestamp: lm.timestamp });
+    }
+    convs.sort((a, b) => b.timestamp - a.timestamp);
+    cl.innerHTML = convs.map(c => {
+        const vBadge = c.userData?.verified ? getVerifiedBadge('sm') : '';
+        return `<div class="follower-item" onclick="closeConversations(); openChat('${c.userId}')"><div class="post-avatar" style="width: 48px; height: 48px;">${c.userData?.avatar ? `<img src="${c.userData.avatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div style="flex: 1;"><div style="font-weight: 600;">${vBadge}${escapeHtml(c.userData?.name || 'مستخدم')}</div><div style="font-size: 12px; color: #8e8e8e;">${c.lastMessage.text ? c.lastMessage.text.substring(0, 30) : (c.lastMessage.audioUrl ? 'رسالة صوتية' : 'صورة')}</div></div></div>`;
+    }).join('');
+    document.getElementById('conversationsPanel').classList.add('open');
+}
+
+function closeConversations() { document.getElementById('conversationsPanel').classList.remove('open'); }
+
+// ==================== مكالمات الفيديو ====================
+async function initAgoraCall() {
+    if (!agoraClient) agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+    return agoraClient;
+}
+
+async function startVideoCallWithAgora(channelName, userId) {
+    try {
+        const client = await initAgoraCall();
+        await client.join(AGORA_APP_ID_CALL, channelName, null, userId);
+        localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack();
+        localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        await client.publish([localTracks.videoTrack, localTracks.audioTrack]);
+        const localPlayer = document.getElementById('localVideo');
+        if (localPlayer) localTracks.videoTrack.play(localPlayer);
+        client.on("user-published", async (user, mediaType) => {
+            await client.subscribe(user, mediaType);
+            if (mediaType === "video") {
+                const remotePlayer = document.getElementById('remoteVideo');
+                if (remotePlayer) user.videoTrack.play(remotePlayer);
+            }
+            if (mediaType === "audio") user.audioTrack.play();
+        });
+        isCallActive = true;
+        showToast('تم بدء المكالمة');
+    } catch (error) {
+        console.error('Video call error:', error);
+        showToast('فشل بدء المكالمة');
+    }
+}
+
+async function endVideoCall() {
+    if (agoraClient) {
+        if (localTracks.videoTrack) localTracks.videoTrack.close();
+        if (localTracks.audioTrack) localTracks.audioTrack.close();
+        await agoraClient.leave();
+        isCallActive = false;
+        showToast('تم إنهاء المكالمة');
+    }
+    document.getElementById('videoCallModal').classList.remove('open');
+}
+
+async function startVideoCallWithCurrentUser() {
+    if (!currentChatUser) return;
+    const channelName = `call_${getChatId(currentUser.uid, currentChatUser.uid)}`;
+    document.getElementById('videoCallModal').classList.add('open');
+    await startVideoCallWithAgora(channelName, currentUser.uid);
+    await db.ref(`notifications/${currentChatUser.uid}`).push({
+        type: 'call', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name,
+        channelName: channelName, timestamp: Date.now(), read: false
+    });
+}
+
+async function startVideoCallWithUser(userId) {
+    const channelName = `call_${getChatId(currentUser.uid, userId)}`;
+    document.getElementById('videoCallModal').classList.add('open');
+    await startVideoCallWithAgora(channelName, currentUser.uid);
+    await db.ref(`notifications/${userId}`).push({
+        type: 'call', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name,
+        channelName: channelName, timestamp: Date.now(), read: false
+    });
+}
+
+console.log('💖 VIBE Chat Module Ready');
+"""
+
+# ═══════════════════════════════════════════════════════════
+# 💖 8. posts.js - المنشورات والتعليقات
+# ═══════════════════════════════════════════════════════════
+
+def build_posts_js():
+    return """// 💖 VIBE 2026 - Posts & Comments Module
+
+// ==================== إنشاء منشور ====================
+function createHeartAnimation(x, y) {
+    const heart = document.createElement('div');
+    heart.className = 'heart-animation';
+    heart.innerHTML = '❤️';
+    heart.style.left = x + 'px';
+    heart.style.top = y + 'px';
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), 600);
+}
+
 function addEmojiToPost(emoji) {
     const textarea = document.getElementById('postText');
     textarea.value += emoji;
@@ -1221,319 +1830,6 @@ async function checkScheduledPosts() {
     }
 }
 
-function createHeartAnimation(x, y) {
-    const heart = document.createElement('div');
-    heart.className = 'heart-animation';
-    heart.innerHTML = '❤️';
-    heart.style.left = x + 'px';
-    heart.style.top = y + 'px';
-    document.body.appendChild(heart);
-    setTimeout(() => heart.remove(), 600);
-}
-
-// ==================== الإعدادات ====================
-function toggleReadMode() {
-    readModeActive = !readModeActive;
-    const toggle = document.getElementById('readModeToggle');
-    if (readModeActive) {
-        document.body.classList.add('read-mode');
-        toggle.classList.add('active');
-        localStorage.setItem('readMode', 'true');
-    } else {
-        document.body.classList.remove('read-mode');
-        toggle.classList.remove('active');
-        localStorage.setItem('readMode', 'false');
-    }
-    showToast(readModeActive ? 'تم تفعيل وضع القراءة' : 'تم إلغاء وضع القراءة');
-}
-
-function toggleHideLikes() {
-    hideLikesActive = !hideLikesActive;
-    const toggle = document.getElementById('hideLikesToggle');
-    if (hideLikesActive) { toggle.classList.add('active'); localStorage.setItem('hideLikes', 'true'); }
-    else { toggle.classList.remove('active'); localStorage.setItem('hideLikes', 'false'); }
-    showToast(hideLikesActive ? 'تم إخفاء عدد الإعجابات' : 'تم إظهار عدد الإعجابات');
-    refreshFeedCache();
-}
-
-function toggleTheme() {
-    document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
-    const themeIcon = document.getElementById('themeToggle');
-    if (themeIcon) {
-        if (isDark) { themeIcon.classList.remove('fa-adjust'); themeIcon.classList.add('fa-sun'); }
-        else { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-adjust'); }
-    }
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    showToast(isDark ? '🌙 الوضع الليلي' : '☀️ الوضع النهاري');
-}
-
-async function toggleDoNotDisturb() {
-    const dndToggle = document.getElementById('dndToggle');
-    const isDnd = dndToggle.classList.contains('active');
-    if (isDnd) { dndToggle.classList.remove('active'); await db.ref(`users/${currentUser.uid}/dnd`).set(false); showToast('تم تفعيل الإشعارات'); }
-    else { dndToggle.classList.add('active'); await db.ref(`users/${currentUser.uid}/dnd`).set(true); showToast('تم تفعيل عدم الإزعاج'); }
-}
-
-async function loadDndStatus() {
-    const snapshot = await db.ref(`users/${currentUser.uid}/dnd`).once('value');
-    const isDnd = snapshot.val();
-    const dndToggle = document.getElementById('dndToggle');
-    if (isDnd && dndToggle) dndToggle.classList.add('active');
-    else if (dndToggle) dndToggle.classList.remove('active');
-}
-
-// ==================== تثبيت واقتباس ====================
-async function pinComment(postId, commentId) {
-    await db.ref(`posts/${postId}/pinnedComment`).set(commentId);
-    showToast('تم تثبيت التعليق');
-    loadComments(postId);
-}
-
-function quotePost(postId, originalText, originalUser) {
-    openCompose();
-    document.getElementById('postText').value = `اقتباس من @${originalUser}: "${originalText.substring(0, 100)}"\n\n`;
-    window.quoteOriginalPostId = postId;
-}
-
-// ==================== مكالمات الفيديو ====================
-async function initAgoraCall() {
-    if (!agoraClient) agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-    return agoraClient;
-}
-
-async function startVideoCallWithAgora(channelName, userId) {
-    try {
-        const client = await initAgoraCall();
-        await client.join(AGORA_APP_ID_CALL, channelName, null, userId);
-        localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack();
-        localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-        await client.publish([localTracks.videoTrack, localTracks.audioTrack]);
-        const localPlayer = document.getElementById('localVideo');
-        if (localPlayer) localTracks.videoTrack.play(localPlayer);
-        client.on("user-published", async (user, mediaType) => {
-            await client.subscribe(user, mediaType);
-            if (mediaType === "video") {
-                const remotePlayer = document.getElementById('remoteVideo');
-                if (remotePlayer) user.videoTrack.play(remotePlayer);
-            }
-            if (mediaType === "audio") user.audioTrack.play();
-        });
-        isCallActive = true;
-        showToast('تم بدء المكالمة');
-    } catch (error) {
-        console.error('Video call error:', error);
-        showToast('فشل بدء المكالمة');
-    }
-}
-
-async function endVideoCall() {
-    if (agoraClient) {
-        if (localTracks.videoTrack) localTracks.videoTrack.close();
-        if (localTracks.audioTrack) localTracks.audioTrack.close();
-        await agoraClient.leave();
-        isCallActive = false;
-        showToast('تم إنهاء المكالمة');
-    }
-    document.getElementById('videoCallModal').classList.remove('open');
-}
-
-async function startVideoCallWithCurrentUser() {
-    if (!currentChatUser) return;
-    const channelName = `call_${getChatId(currentUser.uid, currentChatUser.uid)}`;
-    document.getElementById('videoCallModal').classList.add('open');
-    await startVideoCallWithAgora(channelName, currentUser.uid);
-    await db.ref(`notifications/${currentChatUser.uid}`).push({
-        type: 'call', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name,
-        channelName: channelName, timestamp: Date.now(), read: false
-    });
-}
-
-async function startVideoCallWithUser(userId) {
-    const channelName = `call_${getChatId(currentUser.uid, userId)}`;
-    document.getElementById('videoCallModal').classList.add('open');
-    await startVideoCallWithAgora(channelName, currentUser.uid);
-    await db.ref(`notifications/${userId}`).push({
-        type: 'call', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name,
-        channelName: channelName, timestamp: Date.now(), read: false
-    });
-}
-
-// ==================== تسجيل الخروج ====================
-async function logout() {
-    try {
-        await auth.signOut();
-        localStorage.removeItem('auth_logged_in');
-        showToast('تم تسجيل الخروج بنجاح');
-        setTimeout(() => { window.location.href = 'auth.html'; }, 1000);
-    } catch (error) {
-        console.error('Logout error:', error);
-        showToast('حدث خطأ أثناء تسجيل الخروج');
-    }
-}
-
-// ==================== مشاهدات الملف الشخصي ====================
-async function recordProfileView(viewedUserId) {
-    if (viewedUserId === currentUser.uid) return;
-    await db.ref(`profileViews/${viewedUserId}/${currentUser.uid}`).set({
-        viewerId: currentUser.uid, viewerName: currentUser.displayName || currentUser.name,
-        viewerAvatar: currentUser.avatar || '', timestamp: Date.now()
-    });
-}
-
-async function openProfileViews() {
-    const snapshot = await db.ref(`profileViews/${currentProfileUser || currentUser.uid}`).once('value');
-    const views = snapshot.val();
-    const container = document.getElementById('profileViewsList');
-    if (!views) {
-        container.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد مشاهدات بعد</div>';
-    } else {
-        let html = '';
-        const viewsArray = Object.values(views).sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
-        for (const view of viewsArray) {
-            html += `<div class="follower-item" onclick="closeProfileViews(); openProfile('${view.viewerId}')">
-                <div class="post-avatar" style="width: 44px; height: 44px;">${view.viewerAvatar ? `<img src="${view.viewerAvatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div>
-                <div><div style="font-weight: 600;">${escapeHtml(view.viewerName)}</div><div style="font-size: 11px; color: #8e8e8e;">${formatTime(view.timestamp)}</div></div>
-            </div>`;
-        }
-        container.innerHTML = html;
-    }
-    document.getElementById('profileViewsPanel').classList.add('open');
-}
-
-function closeProfileViews() { document.getElementById('profileViewsPanel').classList.remove('open'); }
-
-// ==================== حفظ المنشورات ====================
-async function savePost(postId) {
-    const saveRef = db.ref(`savedPosts/${currentUser.uid}/${postId}`);
-    const snapshot = await saveRef.once('value');
-    if (snapshot.exists()) { await saveRef.remove(); showToast('تم إزالة من المحفوظة'); }
-    else { await saveRef.set(true); showToast('تم حفظ المنشور 💖'); }
-    refreshFeedCache();
-}
-
-async function openSavedPosts() {
-    const snapshot = await db.ref(`savedPosts/${currentUser.uid}`).once('value');
-    const savedPosts = snapshot.val();
-    const container = document.getElementById('savedPostsGrid');
-    if (!savedPosts) { container.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد منشورات محفوظة</div>'; }
-    else {
-        let html = '';
-        for (const postId of Object.keys(savedPosts)) {
-            const postSnapshot = await db.ref(`posts/${postId}`).once('value');
-            const post = postSnapshot.val();
-            if (post) {
-                html += `<div class="grid-item" onclick="openComments('${postId}')">${post.mediaUrl ? (post.mediaType === 'image' ? `<img src="${post.mediaUrl}">` : `<video src="${post.mediaUrl}"></video>`) : '<div class="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800"><i class="fas fa-file-alt text-2xl text-gray-500"></i></div>'}</div>`;
-            }
-        }
-        container.innerHTML = html || '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد منشورات محفوظة</div>';
-    }
-    document.getElementById('savedPostsPanel').classList.add('open');
-}
-
-function closeSavedPosts() { document.getElementById('savedPostsPanel').classList.remove('open'); }
-
-// ==================== تثبيت المنشور ====================
-async function pinPost(postId) {
-    const currentPinned = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
-    if (currentPinned.val() === postId) {
-        await db.ref(`users/${currentUser.uid}/pinnedPost`).remove();
-        showToast('تم إلغاء تثبيت المنشور');
-    } else {
-        await db.ref(`users/${currentUser.uid}/pinnedPost`).set(postId);
-        showToast('تم تثبيت المنشور 📌');
-    }
-    refreshFeedCache();
-}
-
-// ==================== الإبلاغ ====================
-function openReportModal(postId) {
-    currentReportPostId = postId;
-    selectedReportReason = null;
-    document.querySelectorAll('.report-reason').forEach(el => el.classList.remove('selected'));
-    document.getElementById('reportModal').classList.add('open');
-}
-
-function selectReportReason(element, reason) {
-    document.querySelectorAll('.report-reason').forEach(el => el.classList.remove('selected'));
-    element.classList.add('selected');
-    selectedReportReason = reason;
-}
-
-function closeReportModal() {
-    document.getElementById('reportModal').classList.remove('open');
-    currentReportPostId = null;
-    selectedReportReason = null;
-}
-
-async function submitReport() {
-    if (!selectedReportReason || !currentReportPostId) return showToast('الرجاء اختيار سبب الإبلاغ');
-    await db.ref(`reports/${currentReportPostId}`).push({
-        reporterId: currentUser.uid, reporterName: currentUser.displayName || currentUser.name,
-        reason: selectedReportReason, timestamp: Date.now()
-    });
-    showToast('تم إرسال البلاغ، شكراً لك');
-    closeReportModal();
-}
-
-// ==================== حظر وتقييد ====================
-async function muteUser(userId, minutes = 60) {
-    const muteUntil = Date.now() + (minutes * 60 * 1000);
-    await db.ref(`users/${userId}/mutedUntil`).set(muteUntil);
-    showToast(`تم تقييد المستخدم لمدة ${minutes} دقيقة`);
-    openAdminPanel();
-}
-
-async function isUserMuted(userId) {
-    const snapshot = await db.ref(`users/${userId}/mutedUntil`).once('value');
-    const muteUntil = snapshot.val();
-    return muteUntil && muteUntil > Date.now();
-}
-
-async function blockUser(userId) { await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).set(true); showToast('تم حظر المستخدم'); refreshFeedCache(); }
-async function unblockUser(userId) { await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).remove(); showToast('تم إلغاء حظر المستخدم'); refreshFeedCache(); }
-async function isBlocked(userId) { const snapshot = await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).once('value'); return snapshot.exists(); }
-
-// ==================== تغيير الصورة والغلاف ====================
-async function changeAvatar() {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const url = await uploadToCloudinary(file);
-            if (url) {
-                await db.ref(`users/${currentUser.uid}`).update({ avatar: url });
-                currentUser.avatar = url;
-                if (currentProfileUser) openProfile(currentProfileUser);
-                else openProfile(currentUser.uid);
-                showToast('تم تغيير الصورة الشخصية 💖');
-            }
-        }
-    };
-    input.click();
-}
-
-async function changeCover() {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const url = await uploadToCloudinary(file);
-            if (url) {
-                await db.ref(`users/${currentUser.uid}`).update({ cover: url });
-                currentUser.cover = url;
-                if (currentProfileUser) openProfile(currentProfileUser);
-                else openProfile(currentUser.uid);
-                showToast('تم تغيير صورة الغلاف 💖');
-            }
-        }
-    };
-    input.click();
-}
-
-// ==================== إنشاء منشور ====================
 async function createPost() {
     const publishBtn = document.getElementById('publishPostBtn');
     if (publishBtn) { publishBtn.style.transform = 'scale(0.95)'; setTimeout(() => { if(publishBtn) publishBtn.style.transform = 'scale(1)'; }, 150); }
@@ -1668,24 +1964,77 @@ async function incrementPostViews(postId) {
     await db.ref(`posts/${postId}/views`).transaction(current => (current || 0) + 1);
 }
 
-// ==================== الترند ====================
-async function loadTrendingHashtags() {
-    const hashtagSnapshot = await db.ref('hashtags').once('value');
-    const hashtags = hashtagSnapshot.val();
-    if (!hashtags) return;
-    const trending = [];
-    for (const [tag, posts] of Object.entries(hashtags)) { trending.push({ tag, count: Object.keys(posts).length }); }
-    trending.sort((a, b) => b.count - a.count);
-    const top5 = trending.slice(0, 5);
-    const container = document.getElementById('trendingList');
-    if (container) {
-        container.innerHTML = top5.map((item, index) => `
-            <div class="trending-item" onclick="searchHashtag('${item.tag}')">
-                <div style="font-weight: 600; color: var(--pink);">#${escapeHtml(item.tag)}</div>
-                <div style="font-size: 12px; color: #8e8e8e;">${item.count} منشور</div>
-            </div>
-        `).join('');
+// ==================== تثبيت واقتباس ====================
+async function pinComment(postId, commentId) {
+    await db.ref(`posts/${postId}/pinnedComment`).set(commentId);
+    showToast('تم تثبيت التعليق');
+    loadComments(postId);
+}
+
+function quotePost(postId, originalText, originalUser) {
+    openCompose();
+    document.getElementById('postText').value = `اقتباس من @${originalUser}: "${originalText.substring(0, 100)}"\\n\\n`;
+    window.quoteOriginalPostId = postId;
+}
+
+async function pinPost(postId) {
+    const currentPinned = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
+    if (currentPinned.val() === postId) {
+        await db.ref(`users/${currentUser.uid}/pinnedPost`).remove();
+        showToast('تم إلغاء تثبيت المنشور');
+    } else {
+        await db.ref(`users/${currentUser.uid}/pinnedPost`).set(postId);
+        showToast('تم تثبيت المنشور 📌');
     }
+    refreshFeedCache();
+}
+
+// ==================== التعليقات ====================
+async function openComments(postId) { currentPostId = postId; document.getElementById('commentsPanel').classList.add('open'); await loadComments(postId); }
+
+async function loadComments(postId) {
+    const snapshot = await db.ref(`comments/${postId}`).once('value');
+    const comments = snapshot.val();
+    const commentsList = document.getElementById('commentsList');
+    if (!commentsList) return;
+    const pinnedCommentId = await db.ref(`posts/${postId}/pinnedComment`).once('value');
+    const pinnedId = pinnedCommentId.val();
+    if (!comments) { commentsList.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد تعليقات</div>'; return; }
+    let commentsArray = Object.entries(comments).map(([id, comment]) => ({ id, ...comment }));
+    if (pinnedId) { const pi = commentsArray.findIndex(c => c.id === pinnedId); if (pi > -1) { const pc = commentsArray[pi]; commentsArray.splice(pi, 1); commentsArray.unshift(pc); } }
+    let html = '';
+    for (const comment of commentsArray) {
+        const userSnapshot = await db.ref(`users/${comment.userId}`).once('value');
+        const userData = userSnapshot.val();
+        // 💎 Verified Badge in Comments
+        const vBadge = userData?.verified ? getVerifiedBadge('sm') : '';
+        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer;" onclick="closeComments(); openProfile('${comment.userId}')">${vBadge}${escapeHtml(userData?.name || 'مستخدم')}</span><span style="font-size: 10px; color: #8e8e8e;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: #ec4899; color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
+    }
+    commentsList.innerHTML = html;
+}
+
+async function addComment() {
+    let text = document.getElementById('commentInput')?.value;
+    if (!text || !currentPostId) return;
+    if (containsBadWords(text)) return showToast('⚠️ التعليق يحتوي على كلمات ممنوعة');
+    text = filterBadWords(text);
+    if (await isUserMuted(currentUser.uid)) return showToast('⚠️ أنت مقيد مؤقتاً');
+    const commentRef = db.ref(`comments/${currentPostId}`).push();
+    await commentRef.set({ userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, text, timestamp: Date.now() });
+    const postRef = db.ref(`posts/${currentPostId}`);
+    const snapshot = await postRef.once('value');
+    const post = snapshot.val();
+    await postRef.update({ commentsCount: (post.commentsCount || 0) + 1 });
+    if (post.userId !== currentUser.uid) {
+        const dndSnapshot = await db.ref(`users/${post.userId}/dnd`).once('value');
+        if (!dndSnapshot.val()) {
+            await db.ref(`notifications/${post.userId}`).push({ type: 'comment', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, postId: currentPostId, text, timestamp: Date.now(), read: false });
+        }
+    }
+    document.getElementById('commentInput').value = '';
+    await loadComments(currentPostId);
+    refreshFeedCache();
+    showToast('تم إضافة التعليق 💬');
 }
 
 // ==================== Infinite Scroll ====================
@@ -1743,7 +2092,10 @@ async function displayPosts(startIndex, count) {
         
         let formattedText = escapeHtml(post.text);
         if (post.hashtags) post.hashtags.forEach(tag => { const regex = new RegExp(`#${tag}`, 'gi'); formattedText = formattedText.replace(regex, `<span class="post-hashtags" onclick="searchHashtag('${tag}')">#${tag}</span>`); });
-        formattedText = formattedText.replace(/@(\w+)/g, '<span class="post-hashtags" onclick="searchUser(\'$1\')">@$1</span>');
+        formattedText = formattedText.replace(/@(\w+)/g, '<span class="post-hashtags" onclick="searchUser(\\'$1\\')">@$1</span>');
+        
+        // 💎 Verified Badge in Posts
+        const vBadgeHtml = isUserVerified ? getVerifiedBadge('main') : '';
         
         let pollHtml = '';
         if (post.poll && post.poll.question) {
@@ -1775,7 +2127,7 @@ async function displayPosts(startIndex, count) {
                 <div class="post-header">
                     <div class="post-user-info" onclick="openProfile('${post.userId}')">
                         <div class="post-avatar">${post.userAvatar ? `<img src="${post.userAvatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div>
-                        <div><div class="post-username">${escapeHtml(post.userName)}${isUserVerified ? '<i class="fas fa-check-circle verified-badge" style="color: #ec4899; font-size: 14px;"></i>' : ''}</div><div class="post-time">${formatTime(post.timestamp)} ${post.edited ? '· معدل' : ''}</div></div>
+                        <div><div class="post-username">${escapeHtml(post.userName)}${vBadgeHtml}</div><div class="post-time">${formatTime(post.timestamp)} ${post.edited ? '· معدل' : ''}</div></div>
                     </div>
                     <div style="display: flex; gap: 12px;">
                         ${(isOwner || currentUser?.isAdmin) ? `<button class="post-menu" onclick="event.stopPropagation(); deletePost('${post.id}')"><i class="fas fa-trash-alt"></i></button>` : ''}
@@ -1855,10 +2207,7 @@ async function refreshFeedCache() {
     postsArray = postsArray.filter(post => !blockedUsers[post.userId]);
     const pinnedPostId = await db.ref(`users/${currentUser.uid}/pinnedPost`).once('value');
     const pinnedId = pinnedPostId.val();
-    if (pinnedId) {
-        const pi = postsArray.findIndex(p => p.id === pinnedId);
-        if (pi > -1) { const pp = postsArray[pi]; postsArray.splice(pi, 1); postsArray.unshift(pp); }
-    }
+    if (pinnedId) { const pi = postsArray.findIndex(p => p.id === pinnedId); if (pi > -1) { const pp = postsArray[pi]; postsArray.splice(pi, 1); postsArray.unshift(pp); } }
     allPostsCache = postsArray;
     hasMorePosts = allPostsCache.length > POSTS_PER_PAGE;
     currentDisplayCount = Math.min(POSTS_PER_PAGE, allPostsCache.length);
@@ -1867,8 +2216,166 @@ async function refreshFeedCache() {
 }
 
 function resetInfiniteScroll() { isLoadingPosts = false; hasMorePosts = true; allPostsCache = []; currentDisplayCount = 0; }
-
 async function loadFeed() { await loadAllPostsToCache(); }
+
+console.log('💖 VIBE Posts Module Ready');
+"""
+
+# ═══════════════════════════════════════════════════════════
+# 💖 9. admin.js - لوحة التحكم
+# ═══════════════════════════════════════════════════════════
+
+def build_admin_js():
+    return """// 💖 VIBE 2026 - Admin Panel Module
+
+// ==================== الكلمات الممنوعة ====================
+async function loadBadWordsList() {
+    const snapshot = await db.ref('badWords').once('value');
+    const words = snapshot.val();
+    badWordsList = words ? Object.values(words) : [];
+    console.log('📝 الكلمات الممنوعة:', badWordsList);
+}
+
+async function addBadWord(word) {
+    if (!word.trim()) return;
+    await db.ref('badWords').push(word.trim().toLowerCase());
+    await loadBadWordsList();
+    showToast(`تمت إضافة كلمة: ${word}`);
+    if (currentUser?.isAdmin) openAdminPanel();
+}
+
+async function removeBadWord(wordId, word) {
+    await db.ref(`badWords/${wordId}`).remove();
+    await loadBadWordsList();
+    showToast(`تم حذف كلمة: ${word}`);
+    if (currentUser?.isAdmin) openAdminPanel();
+}
+
+function showAddBadWordModal() {
+    const word = prompt('📝 أدخل الكلمة التي تريد منعها:');
+    if (word && word.trim()) addBadWord(word.trim());
+}
+
+// ==================== حظر وتقييد ====================
+async function muteUser(userId, minutes = 60) {
+    const muteUntil = Date.now() + (minutes * 60 * 1000);
+    await db.ref(`users/${userId}/mutedUntil`).set(muteUntil);
+    showToast(`تم تقييد المستخدم لمدة ${minutes} دقيقة`);
+    openAdminPanel();
+}
+
+async function isUserMuted(userId) {
+    const snapshot = await db.ref(`users/${userId}/mutedUntil`).once('value');
+    const muteUntil = snapshot.val();
+    return muteUntil && muteUntil > Date.now();
+}
+
+async function blockUser(userId) { await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).set(true); showToast('تم حظر المستخدم'); refreshFeedCache(); }
+async function unblockUser(userId) { await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).remove(); showToast('تم إلغاء حظر المستخدم'); refreshFeedCache(); }
+async function isBlocked(userId) { const snapshot = await db.ref(`users/${currentUser.uid}/blockedUsers/${userId}`).once('value'); return snapshot.exists(); }
+
+// ==================== لوحة التحكم ====================
+async function openAdminPanel() {
+    if (currentUser.email !== ADMIN_EMAIL && !currentUser.isAdmin) return showToast('🚫 غير مصرح لك بالدخول إلى لوحة التحكم');
+    showToast('💖 جاري تحميل لوحة التحكم...');
+    
+    // Bad Words
+    const bws = await db.ref('badWords').once('value');
+    const bw = bws.val();
+    const bwc = document.getElementById('badWordsList');
+    if (bwc) {
+        if (!bw) bwc.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد كلمات ممنوعة</div>';
+        else bwc.innerHTML = Object.entries(bw).map(([id, w]) => `<div class="admin-item"><div><span style="font-weight: 600;">🚫 ${escapeHtml(w)}</span></div><button onclick="removeBadWord('${id}', '${w}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer;">حذف</button></div>`).join('');
+    }
+    
+    // Stats
+    const uss = await db.ref('users').once('value');
+    const pss = await db.ref('posts').once('value');
+    const css = await db.ref('comments').once('value');
+    document.getElementById('adminUsersCount').textContent = uss.exists() ? Object.keys(uss.val()).length : 0;
+    document.getElementById('adminPostsCount').textContent = pss.exists() ? Object.keys(pss.val()).length : 0;
+    let cc = 0;
+    if (css.exists()) for (const pc of Object.values(css.val())) cc += Object.keys(pc).length;
+    document.getElementById('adminCommentsCount').textContent = cc;
+    
+    // Users Management with Verify Toggle
+    let usersHtml = '';
+    if (uss.exists()) {
+        for (const [uid, user] of Object.entries(uss.val())) {
+            if (uid !== currentUser.uid) {
+                const isMuted = await isUserMuted(uid);
+                const isUserVerified = user.verified || false;
+                // 💎 Verified Badge in Admin + Verify Button
+                const verifyBtn = isUserVerified 
+                    ? `<button class="admin-verify-btn unverify" onclick="toggleVerifyUser('${uid}')"><i class="fas fa-times-circle"></i> إلغاء التوثيق</button>`
+                    : `<button class="admin-verify-btn" onclick="toggleVerifyUser('${uid}')"><i class="fas fa-check-circle"></i> توثيق</button>`;
+                const vBadge = isUserVerified ? getVerifiedBadge('sm') : '';
+                usersHtml += `<div class="admin-item">
+                    <div>
+                        <div class="admin-item-name">${vBadge}${escapeHtml(user.name)}</div>
+                        <div style="font-size: 11px; color: #8e8e8e;">${escapeHtml(user.email)}</div>
+                    </div>
+                    <div>
+                        ${verifyBtn}
+                        <button onclick="muteUser('${uid}', 60)" style="background: #f59e0b; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; margin: 0 4px;">🔇 تقييد</button>
+                        <button onclick="deleteUser('${uid}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">🗑️ حذف</button>
+                    </div>
+                </div>`;
+            }
+        }
+    }
+    document.getElementById('adminUsersList').innerHTML = usersHtml || '<div class="text-center p-4 text-gray-500">لا يوجد مستخدمين</div>';
+    
+    // Posts Management
+    let postsHtml = '';
+    if (pss.exists()) {
+        for (const post of Object.values(pss.val()).sort((a, b) => b.timestamp - a.timestamp).slice(0, 20)) {
+            postsHtml += `<div class="admin-item"><div><div style="font-weight: 600;">${escapeHtml(post.userName)}</div><div style="font-size: 11px; color: #8e8e8e;">${escapeHtml(post.text?.substring(0, 50) || '')}</div></div><button onclick="deletePost('${post.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer;">🗑️ حذف</button></div>`;
+        }
+    }
+    document.getElementById('adminPostsList').innerHTML = postsHtml || '<div class="text-center p-4 text-gray-500">لا توجد منشورات</div>';
+    
+    document.getElementById('adminPanel').classList.add('open');
+}
+
+// 💎 Toggle Verify User
+async function toggleVerifyUser(userId) {
+    const snap = await db.ref(`users/${userId}`).once('value');
+    const data = snap.val();
+    if (!data) return;
+    const newState = !data.verified;
+    if (!confirm(`تأكيد ${newState ? 'توثيق' : 'إلغاء توثيق'} @${data.name || 'المستخدم'}؟`)) return;
+    await db.ref(`users/${userId}`).update({ 
+        verified: newState, 
+        verifiedAt: newState ? Date.now() : null, 
+        verifiedBy: newState ? currentUser.uid : null 
+    });
+    showToast(`✅ تم ${newState ? 'توثيق' : 'إلغاء توثيق'} المستخدم`);
+    openAdminPanel();
+    if (currentProfileUser === userId) openProfile(userId);
+    refreshFeedCache();
+}
+
+async function deleteUser(userId) {
+    if (confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً؟')) {
+        await db.ref(`users/${userId}`).remove();
+        showToast('🗑️ تم حذف المستخدم');
+        openAdminPanel();
+        refreshFeedCache();
+    }
+}
+
+function closeAdmin() { document.getElementById('adminPanel').classList.remove('open'); }
+
+console.log('💖 VIBE Admin Module Ready');
+"""
+
+# ═══════════════════════════════════════════════════════════
+# 💖 10. extras.js - البحث والإشعارات والإبلاغ والحفظ
+# ═══════════════════════════════════════════════════════════
+
+def build_extras_js():
+    return """// 💖 VIBE 2026 - Extras Module (Search, Notifications, Reports, Saved)
 
 // ==================== البحث ====================
 async function searchUser(username) { openSearch(); document.getElementById('searchInput').value = username; await searchAll(); }
@@ -1891,221 +2398,14 @@ async function searchAll() {
     }
     let html = '';
     for (const r of results) {
-        if (r.type === 'user') html += `<div class="follower-item" onclick="closeSearch(); openProfile('${r.data.uid}')"><div class="post-avatar" style="width: 44px; height: 44px;">${r.data.avatar ? `<img src="${r.data.avatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 600;">${escapeHtml(r.data.name)}</div><div style="font-size: 12px; color: #8e8e8e;">${escapeHtml(r.data.email)}</div></div></div>`;
+        if (r.type === 'user') {
+            // 💎 Verified Badge in Search
+            const vBadge = r.data.verified ? getVerifiedBadge('sm') : '';
+            html += `<div class="follower-item" onclick="closeSearch(); openProfile('${r.data.uid}')"><div class="post-avatar" style="width: 44px; height: 44px;">${r.data.avatar ? `<img src="${r.data.avatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 600;">${vBadge}${escapeHtml(r.data.name)}</div><div style="font-size: 12px; color: #8e8e8e;">${escapeHtml(r.data.email)}</div></div></div>`;
+        }
         else if (r.type === 'hashtag') html += `<div class="follower-item" onclick="closeSearch(); searchHashtag('${r.data.tag}')"><div class="post-avatar" style="width: 44px; height: 44px; background: linear-gradient(135deg, #ec4899, #f472b6); display: flex; align-items: center; justify-content: center;"><i class="fas fa-hashtag text-white text-xl"></i></div><div><div style="font-weight: 600; color: #ec4899;">#${escapeHtml(r.data.tag)}</div><div style="font-size: 12px; color: #8e8e8e;">${r.data.count} منشور</div></div></div>`;
     }
     document.getElementById('searchResults').innerHTML = html || '<div class="text-center p-4 text-gray-500">لا توجد نتائج</div>';
-}
-
-// ==================== التعليقات ====================
-async function openComments(postId) { currentPostId = postId; document.getElementById('commentsPanel').classList.add('open'); await loadComments(postId); }
-
-async function loadComments(postId) {
-    const snapshot = await db.ref(`comments/${postId}`).once('value');
-    const comments = snapshot.val();
-    const commentsList = document.getElementById('commentsList');
-    if (!commentsList) return;
-    const pinnedCommentId = await db.ref(`posts/${postId}/pinnedComment`).once('value');
-    const pinnedId = pinnedCommentId.val();
-    if (!comments) { commentsList.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد تعليقات</div>'; return; }
-    let commentsArray = Object.entries(comments).map(([id, comment]) => ({ id, ...comment }));
-    if (pinnedId) { const pi = commentsArray.findIndex(c => c.id === pinnedId); if (pi > -1) { const pc = commentsArray[pi]; commentsArray.splice(pi, 1); commentsArray.unshift(pc); } }
-    let html = '';
-    for (const comment of commentsArray) {
-        const userSnapshot = await db.ref(`users/${comment.userId}`).once('value');
-        const userData = userSnapshot.val();
-        html += `<div class="chat-message"><div class="message-bubble"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;"><span style="font-weight: 600; cursor: pointer;" onclick="closeComments(); openProfile('${comment.userId}')">${escapeHtml(userData?.name || 'مستخدم')}${userData?.verified ? '<i class="fas fa-check-circle" style="color: #ec4899; font-size: 12px;"></i>' : ''}</span><span style="font-size: 10px; color: #8e8e8e;">${formatTime(comment.timestamp)}</span>${comment.id === pinnedId ? '<span style="background: #ec4899; color: white; padding: 2px 6px; border-radius: 12px; font-size: 9px;">📌 مثبت</span>' : ''}</div><div>${escapeHtml(filterBadWords(comment.text))}</div></div></div>`;
-    }
-    commentsList.innerHTML = html;
-}
-
-async function addComment() {
-    let text = document.getElementById('commentInput')?.value;
-    if (!text || !currentPostId) return;
-    if (containsBadWords(text)) return showToast('⚠️ التعليق يحتوي على كلمات ممنوعة');
-    text = filterBadWords(text);
-    if (await isUserMuted(currentUser.uid)) return showToast('⚠️ أنت مقيد مؤقتاً');
-    const commentRef = db.ref(`comments/${currentPostId}`).push();
-    await commentRef.set({ userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, text, timestamp: Date.now() });
-    const postRef = db.ref(`posts/${currentPostId}`);
-    const snapshot = await postRef.once('value');
-    const post = snapshot.val();
-    await postRef.update({ commentsCount: (post.commentsCount || 0) + 1 });
-    if (post.userId !== currentUser.uid) {
-        const dndSnapshot = await db.ref(`users/${post.userId}/dnd`).once('value');
-        if (!dndSnapshot.val()) {
-            await db.ref(`notifications/${post.userId}`).push({ type: 'comment', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, postId: currentPostId, text, timestamp: Date.now(), read: false });
-        }
-    }
-    document.getElementById('commentInput').value = '';
-    await loadComments(currentPostId);
-    refreshFeedCache();
-    showToast('تم إضافة التعليق 💬');
-}
-
-// ==================== الملف الشخصي ====================
-async function openMyProfile() { if (currentUser) openProfile(currentUser.uid); }
-
-async function openProfile(userId) {
-    currentProfileUser = userId;
-    const snapshot = await db.ref(`users/${userId}`).once('value');
-    const userData = snapshot.val();
-    if (!userData) return;
-    await recordProfileView(userId);
-    const pc = document.getElementById('profileCover');
-    if (pc) { pc.style.backgroundImage = userData.cover ? `url(${userData.cover})` : 'linear-gradient(135deg, #ec4899, #f472b6)'; pc.style.backgroundSize = 'cover'; pc.style.backgroundPosition = 'center'; }
-    document.getElementById('profileAvatarLarge').innerHTML = userData.avatar ? `<img src="${userData.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fas fa-user text-5xl text-white flex items-center justify-center h-full"></i>';
-    document.getElementById('profileName').innerHTML = `${escapeHtml(userData.name)} ${userData.verified ? '<i class="fas fa-check-circle verified-badge" style="color: #ec4899; font-size: 20px;"></i>' : ''}`;
-    document.getElementById('profileBio').textContent = userData.bio || "مرحباً! أنا في VIBE ✨";
-    const we = document.getElementById('profileWebsite');
-    we.innerHTML = userData.website ? `<a href="${userData.website}" target="_blank" style="color: #ec4899;">${userData.website}</a>` : '';
-    
-    const fs = await db.ref(`followers/${userId}`).once('value');
-    const fgs = await db.ref(`following/${userId}`).once('value');
-    const vs = await db.ref(`profileViews/${userId}`).once('value');
-    document.getElementById('profileFollowersCount').textContent = fs.exists() ? Object.keys(fs.val()).length : 0;
-    document.getElementById('profileFollowingCount').textContent = fgs.exists() ? Object.keys(fgs.val()).length : 0;
-    document.getElementById('profileViewsCount').textContent = vs.exists() ? Object.keys(vs.val()).length : 0;
-    
-    const ps = await db.ref('posts').once('value');
-    const posts = ps.val();
-    document.getElementById('profilePostsCount').textContent = posts ? Object.values(posts).filter(p => p.userId === userId).length : 0;
-    
-    const bd = document.getElementById('profileButtons');
-    if (userId !== currentUser.uid) {
-        const isF = await checkIfFollowing(userId);
-        const isB = await isBlocked(userId);
-        bd.innerHTML = `<button class="profile-btn ${isF ? '' : 'profile-btn-primary'}" onclick="toggleFollow('${userId}')">${isF ? 'متابَع' : 'متابعة'}</button><button class="profile-btn" onclick="openChat('${userId}')"><i class="fas fa-comment"></i> راسل</button><button class="profile-btn" onclick="startVideoCallWithUser('${userId}')"><i class="fas fa-video"></i></button>${isB ? `<button class="profile-btn" onclick="unblockUser('${userId}')">إلغاء الحظر</button>` : `<button class="profile-btn" onclick="blockUser('${userId}')">حظر</button>`}`;
-    } else {
-        let ab = (currentUser.isAdmin || currentUser.email === ADMIN_EMAIL) ? `<button class="profile-btn profile-btn-primary" onclick="openAdminPanel()"><i class="fas fa-cog"></i> لوحة التحكم</button>` : '';
-        bd.innerHTML = `<button class="profile-btn" onclick="openEditProfileModal()"><i class="fas fa-edit"></i> تعديل</button><button class="profile-btn" onclick="changeAvatar()"><i class="fas fa-camera"></i> صورة</button><button class="profile-btn" onclick="changeCover()"><i class="fas fa-image"></i> غلاف</button>${ab}`;
-    }
-    await loadProfilePosts(userId);
-    document.getElementById('profilePanel').classList.add('open');
-}
-
-async function checkIfFollowing(userId) { const s = await db.ref(`followers/${userId}/${currentUser.uid}`).once('value'); return s.exists(); }
-
-async function toggleFollow(userId) {
-    const isF = await checkIfFollowing(userId);
-    if (isF) { await db.ref(`followers/${userId}/${currentUser.uid}`).remove(); await db.ref(`following/${currentUser.uid}/${userId}`).remove(); showToast('تم إلغاء المتابعة'); }
-    else {
-        await db.ref(`followers/${userId}/${currentUser.uid}`).set({ uid: currentUser.uid, name: currentUser.displayName || currentUser.name, timestamp: Date.now() });
-        await db.ref(`following/${currentUser.uid}/${userId}`).set({ uid: userId, timestamp: Date.now() });
-        showToast('تم المتابعة 💖');
-        const ds = await db.ref(`users/${userId}/dnd`).once('value');
-        if (!ds.val()) await db.ref(`notifications/${userId}`).push({ type: 'follow', userId: currentUser.uid, userName: currentUser.displayName || currentUser.name, timestamp: Date.now(), read: false });
-    }
-    openProfile(userId);
-}
-
-async function loadProfilePosts(userId) {
-    const ps = await db.ref('posts').once('value');
-    const posts = ps.val();
-    const ups = posts ? Object.values(posts).filter(p => p.userId === userId).sort((a, b) => b.timestamp - a.timestamp) : [];
-    const grid = document.getElementById('profilePostsGrid');
-    if (!grid) return;
-    if (!ups.length) { grid.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد منشورات</div>'; return; }
-    grid.innerHTML = ups.map(p => `<div class="grid-item" onclick="openComments('${p.id}')">${p.mediaUrl ? (p.mediaType === 'image' ? `<img src="${p.mediaUrl}">` : `<video src="${p.mediaUrl}"></video>`) : '<div class="flex items-center justify-center h-full"><i class="fas fa-file-alt text-2xl text-gray-500"></i></div>'}<div class="grid-item-overlay"><span><i class="fas fa-heart"></i> ${p.likes ? Object.keys(p.likes).length : 0}</span><span><i class="fas fa-comment"></i> ${p.commentsCount || 0}</span></div></div>`).join('');
-}
-
-async function loadProfileMedia(userId) {
-    const ps = await db.ref('posts').once('value');
-    const posts = ps.val();
-    const ups = posts ? Object.values(posts).filter(p => p.userId === userId && p.mediaUrl).sort((a, b) => b.timestamp - a.timestamp) : [];
-    const grid = document.getElementById('profilePostsGrid');
-    if (!grid) return;
-    if (!ups.length) { grid.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد وسائط</div>'; return; }
-    grid.innerHTML = ups.map(p => `<div class="grid-item" onclick="openComments('${p.id}')">${p.mediaType === 'image' ? `<img src="${p.mediaUrl}">` : `<video src="${p.mediaUrl}"></video>`}</div>`).join('');
-}
-
-function openEditProfileModal() {
-    document.getElementById('editName').value = currentUser.displayName || currentUser.name || '';
-    document.getElementById('editBio').value = currentUser.bio || '';
-    document.getElementById('editWebsite').value = currentUser.website || '';
-    document.getElementById('editProfileModal').classList.add('open');
-}
-function closeEditProfileModal() { document.getElementById('editProfileModal').classList.remove('open'); }
-
-async function saveProfileEdit() {
-    const nn = document.getElementById('editName')?.value;
-    const nb = document.getElementById('editBio')?.value;
-    const nw = document.getElementById('editWebsite')?.value;
-    if (nn && nn.trim()) await currentUser.updateProfile({ displayName: nn.trim() });
-    await db.ref(`users/${currentUser.uid}`).update({ name: nn || currentUser.name, bio: nb || "", website: nw || "" });
-    currentUser.name = nn || currentUser.name; currentUser.bio = nb || ""; currentUser.website = nw || "";
-    currentUser.displayName = nn || currentUser.displayName;
-    closeEditProfileModal(); openProfile(currentUser.uid); showToast('تم حفظ التغييرات 💖');
-}
-
-// ==================== المحادثات ====================
-async function openChat(userId) {
-    const s = await db.ref(`users/${userId}`).once('value');
-    currentChatUser = s.val();
-    document.getElementById('chatUserName').textContent = currentChatUser.name;
-    document.getElementById('chatAvatar').innerHTML = currentChatUser.avatar ? `<img src="${currentChatUser.avatar}" style="width:100%;height:100%;object-fit:cover">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>';
-    const ls = await db.ref(`users/${userId}/lastSeen`).once('value');
-    document.getElementById('chatLastSeen').textContent = ls.val() ? `آخر ظهور ${formatTime(ls.val())}` : '';
-    const chatId = getChatId(currentUser.uid, userId);
-    listenForTyping(chatId);
-    await loadChatMessages(userId);
-    document.getElementById('chatPanel').classList.add('open');
-}
-
-async function loadChatMessages(userId) {
-    const chatId = getChatId(currentUser.uid, userId);
-    db.ref(`chats/${chatId}`).off();
-    db.ref(`chats/${chatId}`).on('value', (snapshot) => {
-        const msgs = snapshot.val();
-        const container = document.getElementById('chatMessages');
-        if (!container) return;
-        if (!msgs) { container.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد رسائل بعد</div>'; return; }
-        let html = '';
-        Object.values(msgs).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => {
-            const isS = msg.senderId === currentUser.uid;
-            html += `<div class="chat-message ${isS ? 'sent' : ''}"><div class="message-bubble ${isS ? 'sent' : ''}">${msg.text ? escapeHtml(msg.text) : ''}${msg.imageUrl ? `<img src="${msg.imageUrl}" class="message-image" onclick="openImageViewer(['${msg.imageUrl}'], 0)">` : ''}${msg.audioUrl ? `<audio controls src="${msg.audioUrl}" style="height: 36px; margin-top: 8px;"></audio>` : ''}</div></div>`;
-        });
-        container.innerHTML = html;
-        container.scrollTop = container.scrollHeight;
-    });
-}
-
-async function sendChatMessage() {
-    const input = document.getElementById('chatMessageInput');
-    let text = input?.value;
-    if (!text || !currentChatUser) return;
-    if (containsBadWords(text)) return showToast('⚠️ تحتوي على كلمات ممنوعة');
-    text = filterBadWords(text);
-    await db.ref(`chats/${getChatId(currentUser.uid, currentChatUser.uid)}`).push({ senderId: currentUser.uid, text, timestamp: Date.now(), read: false });
-    input.value = '';
-}
-
-async function sendChatImage(input) {
-    const file = input.files[0];
-    if (file && currentChatUser) {
-        const url = await uploadToCloudinary(file);
-        if (url) await db.ref(`chats/${getChatId(currentUser.uid, currentChatUser.uid)}`).push({ senderId: currentUser.uid, imageUrl: url, timestamp: Date.now(), read: false });
-    }
-    input.value = '';
-}
-
-async function openConversations() {
-    const cl = document.getElementById('conversationsList');
-    cl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    const s = await db.ref('chats').once('value');
-    const chats = s.val();
-    if (!chats) { cl.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد محادثات</div>'; document.getElementById('conversationsPanel').classList.add('open'); return; }
-    const convs = [];
-    for (const [cid, msgs] of Object.entries(chats)) {
-        const [u1, u2] = cid.split('_');
-        const oid = u1 === currentUser.uid ? u2 : u1;
-        const us = await db.ref(`users/${oid}`).once('value');
-        const lm = Object.values(msgs).sort((a, b) => b.timestamp - a.timestamp)[0];
-        convs.push({ userId: oid, userData: us.val(), lastMessage: lm, timestamp: lm.timestamp });
-    }
-    convs.sort((a, b) => b.timestamp - a.timestamp);
-    cl.innerHTML = convs.map(c => `<div class="follower-item" onclick="closeConversations(); openChat('${c.userId}')"><div class="post-avatar" style="width: 48px; height: 48px;">${c.userData?.avatar ? `<img src="${c.userData.avatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div style="flex: 1;"><div style="font-weight: 600;">${escapeHtml(c.userData?.name || 'مستخدم')}</div><div style="font-size: 12px; color: #8e8e8e;">${c.lastMessage.text ? c.lastMessage.text.substring(0, 30) : (c.lastMessage.audioUrl ? 'رسالة صوتية' : 'صورة')}</div></div></div>`).join('');
-    document.getElementById('conversationsPanel').classList.add('open');
 }
 
 // ==================== الإشعارات ====================
@@ -2141,127 +2441,67 @@ async function openNotifications() {
 
 async function markNotificationRead(notifId) { await db.ref(`notifications/${currentUser.uid}/${notifId}`).update({ read: true }); }
 
-// ==================== لوحة التحكم ====================
-async function openAdminPanel() {
-    if (currentUser.email !== ADMIN_EMAIL && !currentUser.isAdmin) return showToast('🚫 غير مصرح');
-    showToast('💖 جاري تحميل لوحة التحكم...');
-    const bws = await db.ref('badWords').once('value');
-    const bw = bws.val();
-    const bwc = document.getElementById('badWordsList');
-    if (bwc) {
-        if (!bw) bwc.innerHTML = '<div class="text-center p-4 text-gray-500">لا توجد كلمات ممنوعة</div>';
-        else bwc.innerHTML = Object.entries(bw).map(([id, w]) => `<div class="admin-item"><div><span style="font-weight: 600;">🚫 ${escapeHtml(w)}</span></div><button class="admin-delete-btn" onclick="removeBadWord('${id}', '${w}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer;">حذف</button></div>`).join('');
-    }
-    const uss = await db.ref('users').once('value');
-    const pss = await db.ref('posts').once('value');
-    const css = await db.ref('comments').once('value');
-    document.getElementById('adminUsersCount').textContent = uss.exists() ? Object.keys(uss.val()).length : 0;
-    document.getElementById('adminPostsCount').textContent = pss.exists() ? Object.keys(pss.val()).length : 0;
-    let cc = 0;
-    if (css.exists()) for (const pc of Object.values(css.val())) cc += Object.keys(pc).length;
-    document.getElementById('adminCommentsCount').textContent = cc;
-    
-    document.getElementById('adminPanel').classList.add('open');
+// ==================== حفظ المنشورات ====================
+async function savePost(postId) {
+    const saveRef = db.ref(`savedPosts/${currentUser.uid}/${postId}`);
+    const snapshot = await saveRef.once('value');
+    if (snapshot.exists()) { await saveRef.remove(); showToast('تم إزالة من المحفوظة'); }
+    else { await saveRef.set(true); showToast('تم حفظ المنشور 💖'); }
+    refreshFeedCache();
 }
 
-async function verifyUser(userId) { await db.ref(`users/${userId}`).update({ verified: true }); showToast('✅ تم التوثيق'); openAdminPanel(); refreshFeedCache(); }
-async function deleteUser(userId) { if (confirm('⚠️ حذف المستخدم؟')) { await db.ref(`users/${userId}`).remove(); showToast('🗑️ تم الحذف'); openAdminPanel(); refreshFeedCache(); } }
-
-function closeAdmin() { document.getElementById('adminPanel').classList.remove('open'); }
-
-// ==================== المتابعون ====================
-async function openFollowersList(type) {
-    document.getElementById('followersTitle').textContent = type === 'followers' ? 'المتابعون' : 'المتابَعون';
-    const rp = type === 'followers' ? `followers/${currentProfileUser}` : `following/${currentProfileUser}`;
-    const s = await db.ref(rp).once('value');
-    const data = s.val();
-    const c = document.getElementById('followersList');
-    if (!data) { c.innerHTML = '<div class="text-center p-4 text-gray-500">لا يوجد</div>'; }
+async function openSavedPosts() {
+    const snapshot = await db.ref(`savedPosts/${currentUser.uid}`).once('value');
+    const savedPosts = snapshot.val();
+    const container = document.getElementById('savedPostsGrid');
+    if (!savedPosts) { container.innerHTML = '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد منشورات محفوظة</div>'; }
     else {
         let html = '';
-        for (const [uid] of Object.entries(data)) {
-            const us = await db.ref(`users/${uid}`).once('value');
-            const ud = us.val();
-            html += `<div class="follower-item" onclick="closeFollowers(); openProfile('${uid}')"><div class="post-avatar" style="width: 48px; height: 48px;">${ud?.avatar ? `<img src="${ud.avatar}">` : '<i class="fas fa-user text-white text-xl flex items-center justify-center h-full"></i>'}</div><div><div style="font-weight: 600;">${escapeHtml(ud?.name || 'مستخدم')}</div></div></div>`;
+        for (const postId of Object.keys(savedPosts)) {
+            const postSnapshot = await db.ref(`posts/${postId}`).once('value');
+            const post = postSnapshot.val();
+            if (post) {
+                html += `<div class="grid-item" onclick="openComments('${postId}')">${post.mediaUrl ? (post.mediaType === 'image' ? `<img src="${post.mediaUrl}">` : `<video src="${post.mediaUrl}"></video>`) : '<div class="flex items-center justify-center h-full"><i class="fas fa-file-alt text-2xl text-gray-500"></i></div>'}</div>`;
+            }
         }
-        c.innerHTML = html;
+        container.innerHTML = html || '<div class="text-center p-8 text-gray-500" style="grid-column: span 3;">لا توجد منشورات محفوظة</div>';
     }
-    document.getElementById('followersPanel').classList.add('open');
-}
-function closeFollowers() { document.getElementById('followersPanel').classList.remove('open'); }
-
-// ==================== دوال الإغلاق ====================
-function closeCompose() { document.getElementById('composeModal').classList.remove('open'); document.getElementById('postText').value = ''; document.getElementById('mediaPreview').innerHTML = ''; document.getElementById('mediaPreview').style.display = 'none'; document.getElementById('pollBuilder').style.display = 'none'; document.getElementById('schedulePicker').style.display = 'none'; selectedMediaFile = null; }
-function openCompose() { document.getElementById('composeModal').classList.add('open'); }
-function closeComments() { document.getElementById('commentsPanel').classList.remove('open'); currentPostId = null; }
-function closeProfile() { document.getElementById('profilePanel').classList.remove('open'); }
-function closeChat() { document.getElementById('chatPanel').classList.remove('open'); if (isRecording) stopVoiceRecording(); currentChatUser = null; }
-function closeConversations() { document.getElementById('conversationsPanel').classList.remove('open'); }
-function closeNotifications() { document.getElementById('notificationsPanel').classList.remove('open'); }
-function closeSearch() { document.getElementById('searchPanel').classList.remove('open'); document.getElementById('searchInput').value = ''; document.getElementById('searchResults').innerHTML = ''; }
-function openSearch() { document.getElementById('searchPanel').classList.add('open'); }
-function goToHome() { refreshFeedCache(); }
-function switchTab(tab) { if (tab === 'home') refreshFeedCache(); }
-
-function previewMedia(input, type) {
-    const file = input.files[0];
-    if (file) {
-        selectedMediaFile = file;
-        const preview = document.getElementById('mediaPreview');
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            if (type === 'image') preview.innerHTML = `<img src="${e.target.result}">`;
-            else preview.innerHTML = `<video src="${e.target.result}" controls></video>`;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
+    document.getElementById('savedPostsPanel').classList.add('open');
 }
 
-// ==================== تحديث آخر ظهور ====================
-setInterval(async () => { if (currentUser) await db.ref(`users/${currentUser.uid}/lastSeen`).set(Date.now()); }, 60000);
+function closeSavedPosts() { document.getElementById('savedPostsPanel').classList.remove('open'); }
 
-// ==================== المصادقة ====================
-const initLoader = document.getElementById('initLoader');
+// ==================== الإبلاغ ====================
+function openReportModal(postId) {
+    currentReportPostId = postId;
+    selectedReportReason = null;
+    document.querySelectorAll('.report-reason').forEach(el => el.classList.remove('selected'));
+    document.getElementById('reportModal').classList.add('open');
+}
 
-auth.onAuthStateChanged(async (user) => {
-    if (initLoader) { setTimeout(() => { initLoader.style.opacity = '0'; setTimeout(() => { if (initLoader) initLoader.style.display = 'none'; }, 300); }, 500); }
-    
-    if (user) {
-        currentUser = user;
-        const snapshot = await db.ref(`users/${user.uid}`).once('value');
-        if (snapshot.exists()) { currentUser = { ...currentUser, ...snapshot.val() }; }
-        else {
-            await db.ref(`users/${user.uid}`).set({
-                uid: user.uid, name: user.displayName || user.email.split('@')[0],
-                email: user.email, bio: "مرحباً! أنا في VIBE ✨", avatar: "", cover: "",
-                website: "", verified: false, isAdmin: user.email === ADMIN_EMAIL,
-                blockedUsers: {}, mutedUntil: 0, createdAt: Date.now()
-            });
-            currentUser.isAdmin = user.email === ADMIN_EMAIL;
-        }
-        document.getElementById('mainApp').style.display = 'block';
-        
-        const st = localStorage.getItem('theme');
-        if (st === 'dark') document.body.classList.add('dark-mode');
-        const srm = localStorage.getItem('readMode');
-        if (srm === 'true') { readModeActive = true; document.getElementById('readModeToggle')?.classList.add('active'); }
-        const shl = localStorage.getItem('hideLikes');
-        if (shl === 'true') { hideLikesActive = true; document.getElementById('hideLikesToggle')?.classList.add('active'); }
-        
-        await loadBadWordsList();
-        resetInfiniteScroll();
-        await loadFeed();
-        loadNotifications();
-        loadTrendingHashtags();
-        loadDndStatus();
-        checkScheduledPosts();
-    } else {
-        window.location.href = 'auth.html';
-    }
-});
+function selectReportReason(element, reason) {
+    document.querySelectorAll('.report-reason').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedReportReason = reason;
+}
 
-console.log('💖 VIBE 2026 - Premium Pink Glass Ready!');
+function closeReportModal() {
+    document.getElementById('reportModal').classList.remove('open');
+    currentReportPostId = null;
+    selectedReportReason = null;
+}
+
+async function submitReport() {
+    if (!selectedReportReason || !currentReportPostId) return showToast('الرجاء اختيار سبب الإبلاغ');
+    await db.ref(`reports/${currentReportPostId}`).push({
+        reporterId: currentUser.uid, reporterName: currentUser.displayName || currentUser.name,
+        reason: selectedReportReason, timestamp: Date.now()
+    });
+    showToast('تم إرسال البلاغ، شكراً لك');
+    closeReportModal();
+}
+
+console.log('💖 VIBE Extras Module Ready');
 """
 
 # ═══════════════════════════════════════════════════════════
@@ -2273,9 +2513,9 @@ def main():
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
 ║  💖  VIBE 2026 - PREMIUM PINK GLASS EDITION  ✨      ║
-║     Ultimate Generator - 5 Files - 3000+ Lines           ║
+║     Ultimate Generator - 10 Files - 3500+ Lines          ║
 ║                                                          ║
-║  ✨  Chat + Video Calls + Stories + Polls             ║
+║  💎  VERIFIED BADGE SYSTEM (Admin Managed)            ║
 ║  🎀  Premium Pink Glass Transparent Design            ║
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
@@ -2288,6 +2528,11 @@ def main():
     write("index.html", build_index())
     write("style.css", build_style())
     write("script.js", build_script())
+    write("profile.js", build_profile_js())
+    write("chat.js", build_chat_js())
+    write("posts.js", build_posts_js())
+    write("admin.js", build_admin_js())
+    write("extras.js", build_extras_js())
     
     print(f"""
 {'='*60}
@@ -2296,17 +2541,32 @@ def main():
 
   📊 إحصائيات:
      • {TOTAL_LINES} إجمالي عدد الأسطر
-     • 5 ملفات تم إنشاؤها في مجلد {OUTPUT_DIR}/
+     • 10 ملفات تم إنشاؤها في مجلد {OUTPUT_DIR}/
 
   📁 الملفات:
      1. firebase-config.js   → إعدادات Firebase + Cloudinary + Agora
      2. auth.html            → تسجيل دخول + اشتراك (Premium Pink)
      3. index.html           → الصفحة الرئيسية + كل الألواح
-     4. style.css            → التنسيقات الكاملة (Premium Pink Glass)
-     5. script.js            → كل منطق التطبيق (3000+ سطر)
+     4. style.css            → التنسيقات + 💎 تنسيقات التوثيق
+     5. script.js            → الدوال الأساسية + المصادقة
+     6. profile.js           → الملف الشخصي + 💎 التوثيق
+     7. chat.js              → المحادثات + مكالمات الفيديو
+     8. posts.js             → المنشورات + التعليقات + 💎 التوثيق
+     9. admin.js             → لوحة التحكم + 💎 إدارة التوثيق
+    10. extras.js            → البحث + الإشعارات + الحفظ
+
+  💎 علامة التوثيق (Verified Badge):
+     • تظهر في المنشورات (جانب اسم المستخدم)
+     • تظهر في الملف الشخصي (بحجم كبير)
+     • تظهر في التعليقات
+     • تظهر في قائمة المتابعين والمشاهدات
+     • تظهر في المحادثات
+     • تظهر في نتائج البحث
+     • الأدمن يدير التوثيق من لوحة التحكم
 
   💖 المميزات الكاملة:
      • 🎀 تصميم زهري فاخر (Premium Pink Glass)
+     • 💎 علامة توثيق بتوهج زهري
      • 🌙 الوضع الليلي + ⚙️ إعدادات سريعة
      • 📱 Infinite Scroll Feed
      • 💬 محادثات + مؤشر كتابة + رسائل صوتية
@@ -2316,8 +2576,7 @@ def main():
      • 🔇 حظر + تقييد + إبلاغ
      • 👁️ تتبع مشاهدات الملف الشخصي
      • 🔍 بحث + هاشتاجات + ترند
-     • 🛡️ لوحة تحكم + فلتر كلمات
-     • 🎥 مشغل فيديو + 🖼️ عارض صور
+     • 🛡️ لوحة تحكم + فلتر كلمات + إدارة توثيق
 
   🔑 بيانات الاتصال:
      • Firebase: gomr-3356f
